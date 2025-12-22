@@ -53,6 +53,10 @@ CREATE POLICY "Users can read own profile" ON profiles
 CREATE POLICY "Users can update own profile" ON profiles
   FOR UPDATE USING (auth.uid() = id);
 
+-- Users can insert their own profile.
+CREATE POLICY "Users can insert own profile" ON profiles
+  FOR INSERT WITH CHECK (auth.uid() = id);
+
 -- Instructors can read profiles of students in their classes (simplified for MVP: read public/all profiles or handle via joins)
 -- For MVP, let's allow read access to profiles for authenticated users to facilitate class joining/viewing.
 CREATE POLICY "Authenticated users can read profiles" ON profiles
