@@ -1,65 +1,68 @@
-import Image from "next/image";
+import Link from 'next/link';
+import { GraduationCap, School } from 'lucide-react';
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <main className="flex min-h-screen flex-col md:flex-row">
+      {/* Instructor Portal - Left Side */}
+      <div className="flex-1 flex flex-col items-center justify-center p-12 bg-slate-900 text-white border-b md:border-b-0 md:border-r border-slate-700">
+        <div className="max-w-md text-center space-y-6">
+          <School className="w-20 h-20 mx-auto text-blue-400" />
+          <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400">
+            Instructor Portal
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="text-slate-300 text-lg">
+            Create a classroom, invite students, and analyze their submissions for AI-generated content with sentence-level precision.
           </p>
+          <div className="pt-8">
+            <Link
+              href="/login?role=instructor"
+              className="px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg shadow-lg transition-all transform hover:scale-105"
+            >
+              Create Class & Analyze
+            </Link>
+          </div>
+          <div className="mt-12 text-sm text-slate-400 border border-slate-700 p-4 rounded bg-slate-800/50 text-left">
+            <strong className="block text-blue-300 mb-2">How it works:</strong>
+            <ol className="list-decimal pl-5 space-y-1">
+              <li>Sign in (Guest available)</li>
+              <li>Create a Class to get a Code</li>
+              <li>Share Code with Students</li>
+              <li>View Reports instantly</li>
+            </ol>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      </div>
+
+      {/* Student Portal - Right Side */}
+      <div className="flex-1 flex flex-col items-center justify-center p-12 bg-white text-slate-900">
+        <div className="max-w-md text-center space-y-6">
+          <GraduationCap className="w-20 h-20 mx-auto text-emerald-600" />
+          <h1 className="text-4xl font-bold text-slate-900">
+            Student Portal
+          </h1>
+          <p className="text-slate-600 text-lg">
+            Join your class, upload your assignment, and get instant feedback on your originality score.
+          </p>
+          <div className="pt-8">
+            <Link
+              href="/student/submit"
+              className="px-8 py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-lg shadow-lg transition-all transform hover:scale-105"
+            >
+              Join Class & Submit
+            </Link>
+          </div>
+          <div className="mt-12 text-sm text-slate-500 border border-slate-200 p-4 rounded bg-slate-50 text-left">
+            <strong className="block text-emerald-600 mb-2">Student Steps:</strong>
+            <ol className="list-decimal pl-5 space-y-1">
+              <li>Get 6-digit code from teacher</li>
+              <li>Enter Code & Name</li>
+              <li>Upload Docx or Paste Text</li>
+              <li>See your AI Result</li>
+            </ol>
+          </div>
         </div>
-      </main>
-    </div>
+      </div>
+    </main>
   );
 }

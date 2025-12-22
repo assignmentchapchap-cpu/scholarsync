@@ -1,0 +1,265 @@
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase';
+import { extractTextFromDocx } from '@/lib/file-processing';
+import { checkAIContent, cleanText } from '@/lib/ai-service';
+import { Upload, Type, Search, ArrowRight, Loader2 } from 'lucide-react';
+
+export default function StudentSubmitPage() {
+    const [step, setStep] = useState(1); // 1: Identify, 2: Upload
+    const [inviteCode, setInviteCode] = useState('');
+    const [studentName, setStudentName] = useState('');
+    const [email, setEmail] = useState('');
+    const [classData, setClassData] = useState<any>(null);
+
+    const [textInput, setTextInput] = useState('');
+    const [isExamining, setIsExamining] = useState(false);
+    const [analyzing, setAnalyzing] = useState(false);
+
+    const router = useRouter();
+    const supabase = createClient();
+
+    // Step 1: Find Class & Register/Identify
+    const handleJoin = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsExamining(true);
+        try {
+            // 1. Verify Code
+            const { data: cls, error: clsErr } = await supabase
+                .from('classes')
+                .select('*')
+                .eq('invite_code', inviteCode.trim().toUpperCase())
+                .single();
+
+            if (clsErr || !cls) {
+                alert("Invalid Class Code");
+                setIsExamining(false);
+                return;
+            }
+
+            if (cls.is_locked) {
+                alert("This class is currently locked for new submissions.");
+                setIsExamining(false);
+                return;
+            }
+
+            setClassData(cls);
+
+            // 2. "Shadow" Login / Register
+            // For MVP, if they don't have an account, we make one or sign them in anonymously and set profile.
+            // Actually, for Student "No Registration", we still need an ID for the DB.
+            // Strategy: Anonymous Sign In -> storage profile.
+
+            const { data: authData, error: authErr } = await supabase.auth.signInAnonymously();
+            if (authErr) throw authErr;
+
+            if (authData.user) {
+                // Upsert profile (in case they return or it's a new anon session)
+                const { error: profErr } = await supabase.from('profiles').upsert({
+                    id: authData.user.id,
+                    role: 'student',
+                    full_name: studentName,
+                    email: email, // Optional tracking
+                });
+
+                if (profErr) console.error("Profile Error", profErr);
+
+                setStep(2);
+            }
+
+        } catch (error: any) {
+            console.error("Join Error", error);
+            alert("Failed to join. " + error.message);
+        } finally {
+            setIsExamining(false);
+        }
+    };
+
+    // Step 2: Submit
+    const handleSubmission = async (textToAnalyze: string) => {
+        setAnalyzing(true);
+        try {
+            const cleaned = cleanText(textToAnalyze);
+
+            // 1. Run AI Analysis
+            const analysis = await checkAIContent(cleaned);
+
+            // 2. Save to DB
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user || !classData) return;
+
+            const { data: sub, error: subErr } = await supabase.from('submissions').insert({
+                student_id: user.id,
+                class_id: classData.id,
+                content: cleaned, // Storing extracted text
+                ai_score: analysis.globalScore,
+                report_data: analysis
+            }).select().single();
+
+            if (subErr) throw subErr;
+
+            // 3. Redirect to Results
+            router.push(`/student/result/${sub.id}`);
+
+        } catch (error: any) {
+            console.error("Submission Error", error);
+            alert("Submission failed. " + error.message);
+        } finally {
+            setAnalyzing(false);
+        }
+    };
+
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        try {
+            // For MVP, we process client side if possible or send to an API route. 
+            // Since mammoth is node-based, we usually need a server action or API route.
+            // BUT: mammoth.js works in browser too! We can use FileReader.
+            // Let's try browser-side mammoth for speed in MVP.
+
+            const reader = new FileReader();
+            reader.onload = async (event) => {
+                const arrayBuffer = event.target?.result as ArrayBuffer;
+                // We need the browser version of mammoth or use the one we have? 
+                // 'mammoth' package is node/browser isomorphic often, but 'extractRawText' might differ.
+                // If it fails, we fall back to API. 
+
+                // Actually, simpler standard: Send file content to an API route for parsing to keep logic clean.
+                // Let's create a quick API route or Server Action. 
+                // For now, let's use a simple client-side text extraction if possible, 
+                // OR just read text if it's .txt. 
+
+                // Re-reading spec: "Upload Docx". 
+                // Let's assume we post to an API endpoint we will create.
+
+                const formData = new FormData();
+                formData.append('file', file);
+
+                const res = await fetch('/api/parse-docx', { method: 'POST', body: formData });
+                if (!res.ok) throw new Error("File parsing failed");
+                const { text } = await res.json();
+                if (text) {
+                    await handleSubmission(text);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        } catch (err) {
+            alert("Error processing file.");
+        }
+    };
+
+    return (
+        <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6">
+            <div className="max-w-md w-full">
+
+                {step === 1 && (
+                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
+                        <div className="text-center">
+                            <h1 className="text-3xl font-bold text-slate-800">Join Assessment</h1>
+                            <p className="text-slate-500 mt-2">Enter your class details to begin.</p>
+                        </div>
+
+                        <form onSubmit={handleJoin} className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Class Invite Code</label>
+                                <input
+                                    value={inviteCode} onChange={e => setInviteCode(e.target.value)}
+                                    className="w-full p-3 border rounded-lg font-mono text-center text-xl tracking-widest uppercase placeholder:normal-case placeholder:tracking-normal"
+                                    placeholder="ABC-123"
+                                    required
+                                    maxLength={8}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
+                                <input
+                                    value={studentName} onChange={e => setStudentName(e.target.value)}
+                                    className="w-full p-3 border rounded-lg"
+                                    placeholder="John Doe"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Email (Optional)</label>
+                                <input
+                                    type="email"
+                                    value={email} onChange={e => setEmail(e.target.value)}
+                                    className="w-full p-3 border rounded-lg"
+                                    placeholder="For retrieving results later"
+                                />
+                            </div>
+                            <button
+                                disabled={isExamining}
+                                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-lg font-semibold shadow-lg transition-all flex items-center justify-center gap-2"
+                            >
+                                {isExamining ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Enter Class'} <ArrowRight className="w-5 h-5" />
+                            </button>
+                        </form>
+                    </div>
+                )}
+
+                {step === 2 && (
+                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
+                        <div className="text-center mb-8">
+                            <span className="inline-block px-3 py-1 rounded bg-slate-100 text-slate-600 text-sm font-medium mb-4">
+                                Submitting to: <span className="text-emerald-700 font-bold">{classData.name}</span>
+                            </span>
+                            <h2 className="text-2xl font-bold text-slate-800">Submit Your Work</h2>
+                        </div>
+
+                        {analyzing ? (
+                            <div className="text-center py-12">
+                                <Loader2 className="w-16 h-16 mx-auto text-emerald-500 animate-spin mb-6" />
+                                <h3 className="text-xl font-medium text-slate-700">Analyzing Content...</h3>
+                                <p className="text-slate-500">Checking against AI patterns (Roberta Model)</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                {/* Tab Toggle (implied simple implementation) */}
+                                <div className="grid grid-cols-2 gap-4">
+                                    <label className="cursor-pointer block">
+                                        <input type="radio" name="method" className="peer sr-only" defaultChecked />
+                                        <div className="p-4 rounded-xl border-2 border-slate-200 peer-checked:border-emerald-500 peer-checked:bg-emerald-50 transition-all text-center h-full flex flex-col items-center justify-center gap-2">
+                                            <Type className="w-8 h-8 text-slate-400 peer-checked:text-emerald-600" />
+                                            <span className="font-medium text-slate-700 peer-checked:text-emerald-800">Paste Text</span>
+                                        </div>
+                                    </label>
+                                    <label className="cursor-pointer block relative">
+                                        <input type="file" className="sr-only" accept=".docx" onChange={handleFileUpload} />
+                                        <div className="p-4 rounded-xl border-2 border-slate-200 hover:border-blue-400 transition-all text-center h-full flex flex-col items-center justify-center gap-2">
+                                            <Upload className="w-8 h-8 text-slate-400" />
+                                            <span className="font-medium text-slate-700">Upload .docx</span>
+                                        </div>
+                                    </label>
+                                </div>
+
+                                {/* Text Area fallback if they picked paste */}
+                                <div className="relative">
+                                    <textarea
+                                        value={textInput}
+                                        onChange={e => setTextInput(e.target.value)}
+                                        className="w-full h-48 p-4 border rounded-xl resize-none focus:ring-2 focus:ring-emerald-500 outline-none"
+                                        placeholder="Paste your essay here..."
+                                    />
+                                    {textInput.length > 0 && (
+                                        <button
+                                            onClick={() => handleSubmission(textInput)}
+                                            className="absolute bottom-4 right-4 bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors shadow-lg"
+                                        >
+                                            Analyze Text
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+            </div>
+        </div>
+    );
+}
