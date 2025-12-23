@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
 import { extractTextFromDocx } from '@/lib/file-processing';
 import { checkAIContent, cleanText } from '@/lib/ai-service';
-import { Upload, Type, Search, ArrowRight, Loader2 } from 'lucide-react';
+import { Upload, Type, ArrowRight, Loader2, Home } from 'lucide-react';
+import Link from 'next/link';
 
 export default function StudentSubmitPage() {
     const [step, setStep] = useState(1); // 1: Identify, 2: Upload
@@ -26,7 +27,22 @@ export default function StudentSubmitPage() {
         e.preventDefault();
         setIsExamining(true);
         try {
-            // 1. Verify Code
+            // 1. Authenticate First (Required for RLS)
+            const { data: authData, error: authErr } = await supabase.auth.signInAnonymously();
+            if (authErr) throw authErr;
+
+            if (authData.user) {
+                // Upsert profile
+                const { error: profErr } = await supabase.from('profiles').upsert({
+                    id: authData.user.id,
+                    role: 'student',
+                    full_name: studentName,
+                    email: email,
+                });
+                if (profErr) console.error("Profile Error", profErr);
+            }
+
+            // 2. Verify Class Code
             const { data: cls, error: clsErr } = await supabase
                 .from('classes')
                 .select('*')
@@ -46,28 +62,7 @@ export default function StudentSubmitPage() {
             }
 
             setClassData(cls);
-
-            // 2. "Shadow" Login / Register
-            // For MVP, if they don't have an account, we make one or sign them in anonymously and set profile.
-            // Actually, for Student "No Registration", we still need an ID for the DB.
-            // Strategy: Anonymous Sign In -> storage profile.
-
-            const { data: authData, error: authErr } = await supabase.auth.signInAnonymously();
-            if (authErr) throw authErr;
-
-            if (authData.user) {
-                // Upsert profile (in case they return or it's a new anon session)
-                const { error: profErr } = await supabase.from('profiles').upsert({
-                    id: authData.user.id,
-                    role: 'student',
-                    full_name: studentName,
-                    email: email, // Optional tracking
-                });
-
-                if (profErr) console.error("Profile Error", profErr);
-
-                setStep(2);
-            }
+            setStep(2);
 
         } catch (error: any) {
             console.error("Join Error", error);
@@ -84,7 +79,11 @@ export default function StudentSubmitPage() {
             const cleaned = cleanText(textToAnalyze);
 
             // 1. Run AI Analysis
-            const analysis = await checkAIContent(cleaned);
+            const analysis = await checkAIContent(cleaned, {
+                model: classData.settings?.model,
+                granularity: classData.settings?.granularity,
+                scoring_method: classData.settings?.scoring_method
+            });
 
             // 2. Save to DB
             const { data: { user } } = await supabase.auth.getUser();
@@ -116,37 +115,15 @@ export default function StudentSubmitPage() {
         if (!file) return;
 
         try {
-            // For MVP, we process client side if possible or send to an API route. 
-            // Since mammoth is node-based, we usually need a server action or API route.
-            // BUT: mammoth.js works in browser too! We can use FileReader.
-            // Let's try browser-side mammoth for speed in MVP.
+            const formData = new FormData();
+            formData.append('file', file);
 
-            const reader = new FileReader();
-            reader.onload = async (event) => {
-                const arrayBuffer = event.target?.result as ArrayBuffer;
-                // We need the browser version of mammoth or use the one we have? 
-                // 'mammoth' package is node/browser isomorphic often, but 'extractRawText' might differ.
-                // If it fails, we fall back to API. 
-
-                // Actually, simpler standard: Send file content to an API route for parsing to keep logic clean.
-                // Let's create a quick API route or Server Action. 
-                // For now, let's use a simple client-side text extraction if possible, 
-                // OR just read text if it's .txt. 
-
-                // Re-reading spec: "Upload Docx". 
-                // Let's assume we post to an API endpoint we will create.
-
-                const formData = new FormData();
-                formData.append('file', file);
-
-                const res = await fetch('/api/parse-docx', { method: 'POST', body: formData });
-                if (!res.ok) throw new Error("File parsing failed");
-                const { text } = await res.json();
-                if (text) {
-                    await handleSubmission(text);
-                }
-            };
-            reader.readAsArrayBuffer(file);
+            const res = await fetch('/api/parse-docx', { method: 'POST', body: formData });
+            if (!res.ok) throw new Error("File parsing failed");
+            const { text } = await res.json();
+            if (text) {
+                await handleSubmission(text);
+            }
         } catch (err) {
             alert("Error processing file.");
         }
@@ -158,7 +135,10 @@ export default function StudentSubmitPage() {
 
                 {step === 1 && (
                     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
-                        <div className="text-center">
+                        <div className="text-center relative">
+                            <Link href="/" className="absolute left-0 top-0 p-2 text-slate-400 hover:text-slate-600 transition-colors">
+                                <Home className="w-6 h-6" />
+                            </Link>
                             <h1 className="text-3xl font-bold text-slate-800">Join Assessment</h1>
                             <p className="text-slate-500 mt-2">Enter your class details to begin.</p>
                         </div>
@@ -215,7 +195,7 @@ export default function StudentSubmitPage() {
                             <div className="text-center py-12">
                                 <Loader2 className="w-16 h-16 mx-auto text-emerald-500 animate-spin mb-6" />
                                 <h3 className="text-xl font-medium text-slate-700">Analyzing Content...</h3>
-                                <p className="text-slate-500">Checking against AI patterns (Roberta Model)</p>
+                                <p className="text-slate-500">Checking against AI patterns ({classData.settings?.model?.split('/').pop() || 'Roberta Model'})</p>
                             </div>
                         ) : (
                             <div className="space-y-4">

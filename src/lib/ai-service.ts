@@ -1,15 +1,15 @@
 
-const HF_API_URL = "https://api-inference.huggingface.co/models/Hello-SimpleAI/chatgpt-detector-roberta";
+const HF_API_URL = "https://router.huggingface.co/hf-inference/models/Hello-SimpleAI/chatgpt-detector-roberta";
 
-export interface SentenceAnalysis {
-    sentence: string;
+export interface ParagraphAnalysis {
+    paragraph: string;
     score: number; // 0 to 1 probability of being AI
     isSuspected: boolean;
 }
 
 export interface AnalysisResult {
     globalScore: number;
-    sentences: SentenceAnalysis[];
+    paragraphs: ParagraphAnalysis[];
     wordCount: number;
     suspectedWordCount: number;
 }
@@ -34,11 +34,16 @@ export function cleanText(text: string): string {
     return cleaned;
 }
 
-export async function checkAIContent(text: string): Promise<AnalysisResult> {
+export async function checkAIContent(text: string, config?: { model?: string, granularity?: string, scoring_method?: string }): Promise<AnalysisResult> {
     const response = await fetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({
+            text,
+            model: config?.model,
+            granularity: config?.granularity,
+            method: config?.scoring_method
+        }),
     });
 
     if (!response.ok) {
