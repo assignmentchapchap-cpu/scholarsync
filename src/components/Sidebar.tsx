@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { Home, Terminal, User, Upload, LogOut, GraduationCap, Calendar, Settings, FileText, Menu, X, Search, Plus, Bell } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -76,8 +77,8 @@ export default function Sidebar({ role }: SidebarProps) {
                         <Menu className="h-6 w-6" />
                     </button>
                     <Link href={role === 'instructor' ? '/instructor/dashboard' : '/student/dashboard'} className="flex items-center gap-2">
-                        <div className="bg-indigo-600 p-1 rounded-lg">
-                            <GraduationCap className="h-4 w-4 text-white" />
+                        <div className="relative w-8 h-8 rounded-lg overflow-hidden shrink-0">
+                            <Image src="/logo.png" alt="ScholarSync" fill className="object-cover" />
                         </div>
                         <div className="flex flex-col">
                             <span className="font-bold text-lg tracking-tight block leading-none text-white">ScholarSync</span>
@@ -124,8 +125,8 @@ export default function Sidebar({ role }: SidebarProps) {
                     {/* Logo Area */}
                     <div className="flex items-center justify-between p-6 border-b border-slate-800">
                         <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-lg shadow-indigo-900/20">
-                                <GraduationCap className="h-6 w-6" />
+                            <div className="relative w-10 h-10 shrink-0">
+                                <Image src="/logo.png" alt="ScholarSync" fill className="object-cover rounded-xl" />
                             </div>
                             <div>
                                 <h1 className="text-lg font-bold tracking-tight">ScholarSync</h1>
