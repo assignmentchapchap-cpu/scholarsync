@@ -34,7 +34,7 @@ export default function Sidebar({ role }: SidebarProps) {
 
     const handleSignOut = async () => {
         await supabase.auth.signOut();
-        router.push('/login');
+        router.push('/');
     };
 
     const links = role === 'instructor' ? [
@@ -52,6 +52,17 @@ export default function Sidebar({ role }: SidebarProps) {
     ];
 
     const [isMobileOpen, setIsMobileOpen] = useState(false);
+    const [isDemo, setIsDemo] = useState(false);
+
+    useEffect(() => {
+        const checkUser = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user?.email?.endsWith('@scholarsync.demo')) {
+                setIsDemo(true);
+            }
+        };
+        checkUser();
+    }, []);
 
     // Close mobile menu when route changes
     useEffect(() => {
@@ -146,6 +157,23 @@ export default function Sidebar({ role }: SidebarProps) {
                     <nav className="flex-1 space-y-1 px-4 py-8 overflow-y-auto">
                         {links.map((link) => {
                             const isActive = pathname === link.href || (link.href !== '/profile' && pathname?.startsWith(link.href));
+                            const isRestricted = isDemo && (link.href === '/instructor/lab' || link.href === '/instructor/settings');
+
+                            if (isRestricted) {
+                                return (
+                                    <div
+                                        key={link.href}
+                                        className="flex items-center justify-between px-4 py-3 text-sm font-bold rounded-xl text-slate-500 cursor-not-allowed opacity-60 hover:bg-slate-800/50"
+                                        title="Available in Full Version"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <link.icon className="h-5 w-5" />
+                                            {link.label}
+                                        </div>
+                                        <span className="text-[10px] uppercase font-bold bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded border border-slate-700">Lock</span>
+                                    </div>
+                                );
+                            }
 
                             return (
                                 <Link

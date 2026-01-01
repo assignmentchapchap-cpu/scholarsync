@@ -11,6 +11,7 @@ import DashboardTodo from './components/DashboardTodo';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import { Suspense } from 'react';
+import { useToast } from '@/context/ToastContext';
 
 function DashboardContent() {
     const supabase = createClient();
@@ -32,14 +33,21 @@ function DashboardContent() {
     const [searchResults, setSearchResults] = useState<any[]>([]);
     const [showMobileSearch, setShowMobileSearch] = useState(false);
 
-    // Check URL params for mobile search trigger
+    const { showToast } = useToast();
+
+    // Check URL params for mobile search trigger OR demo restriction
     const searchParams = useSearchParams();
 
     useEffect(() => {
         if (searchParams.get('mobile_search') === 'true') {
             setShowMobileSearch(true);
-            // Optional: Clean URL
-            // router.replace('/instructor/dashboard', { scroll: false }); 
+        }
+
+        if (searchParams.get('demo_restricted') === 'true') {
+            showToast('The AI Lab is not available in Demo mode.', 'error');
+            // Clean URL without reload
+            const newUrl = window.location.pathname;
+            window.history.replaceState({}, '', newUrl);
         }
     }, [searchParams]);
 
@@ -452,6 +460,7 @@ function DashboardContent() {
                             onClick={() => router.push('/instructor/classes?new=true')}
                             className="bg-slate-900 hover:bg-slate-800 text-white p-2 px-3 rounded-xl transition-all shadow-sm hidden md:flex items-center justify-center gap-2 group"
                             title="Create New Class"
+                            data-tour="create-class-btn"
                         >
                             <Plus className="w-5 h-5 group-hover:scale-110 transition-transform" />
                             <span className="text-sm font-bold whitespace-nowrap">
@@ -547,6 +556,7 @@ function DashboardContent() {
                     {/* Card 2: Global Submissions */}
                     <div
                         onClick={() => setShowSubmissionsModal(true)}
+                        data-tour="submissions-card"
                         className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 cursor-pointer hover:border-blue-400 hover:shadow-md transition-all group flex flex-col justify-between relative"
                     >
                         <div className="absolute top-4 right-4 text-slate-300 group-hover:text-blue-500 transition-colors">

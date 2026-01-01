@@ -35,6 +35,16 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL('/login', request.url))
     }
 
+    // 1b. Block Demo Users from /instructor/lab and /instructor/settings
+    const isDemoUser = user?.email?.toLowerCase().endsWith('@scholarsync.demo');
+    const isRestrictedRoute = request.nextUrl.pathname.startsWith('/instructor/lab') ||
+        request.nextUrl.pathname.startsWith('/instructor/settings');
+
+    if (isRestrictedRoute && isDemoUser) {
+        // Redirect to dashboard with a query param that client can show a toast for
+        return NextResponse.redirect(new URL('/instructor/dashboard?demo_restricted=true', request.url))
+    }
+
     // 2. Redirect authenticated users away from /login
     if (request.nextUrl.pathname === '/login' && user) {
         return NextResponse.redirect(new URL('/instructor/dashboard', request.url))

@@ -1,68 +1,57 @@
-import Link from 'next/link';
-import { GraduationCap, School } from 'lucide-react';
+'use client';
+
+import { useState } from 'react';
+import Hero from '@/components/landing/Hero';
+import Navbar from '@/components/landing/Navbar';
+import FeatureSection from '@/components/landing/FeatureSection';
+import RoleSwitcher from '@/components/landing/RoleSwitcher';
+import Footer from '@/components/landing/Footer';
+import DemoSignupModal from '@/components/auth/DemoSignupModal';
+import { Sparkles } from 'lucide-react';
 
 export default function Home() {
+  const [showDemoModal, setShowDemoModal] = useState(false);
+
   return (
-    <main className="flex min-h-screen flex-col md:flex-row">
-      {/* Instructor Portal - Left Side */}
-      <div className="flex-1 flex flex-col items-center justify-center p-12 bg-slate-900 text-white border-b md:border-b-0 md:border-r border-slate-700">
-        <div className="max-w-md text-center space-y-6">
-          <School className="w-20 h-20 mx-auto text-blue-400" />
-          <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400">
-            Instructor Portal
-          </h1>
-          <p className="text-slate-300 text-lg">
-            Create a classroom, invite students, and analyze their submissions for AI-generated content with sentence-level precision.
-          </p>
-          <div className="pt-8">
-            <Link
-              href="/login?role=instructor"
-              className="px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg shadow-lg transition-all transform hover:scale-105"
-            >
-              Create Class & Analyze
-            </Link>
-          </div>
-          <div className="mt-12 text-sm text-slate-400 border border-slate-700 p-4 rounded bg-slate-800/50 text-left">
-            <strong className="block text-blue-300 mb-2">How it works:</strong>
-            <ol className="list-decimal pl-5 space-y-1">
-              <li>Sign in (Guest available)</li>
-              <li>Create a Class to get a Code</li>
-              <li>Share Code with Students</li>
-              <li>View Reports instantly</li>
-            </ol>
-          </div>
-        </div>
+    <main className="min-h-screen bg-slate-900">
+      <Navbar onOpenDemo={() => setShowDemoModal(true)} />
+
+      <Hero onOpenDemo={() => setShowDemoModal(true)} />
+
+      <div id="features">
+        <FeatureSection />
       </div>
 
-      {/* Student Portal - Right Side */}
-      <div className="flex-1 flex flex-col items-center justify-center p-12 bg-white text-slate-900">
-        <div className="max-w-md text-center space-y-6">
-          <GraduationCap className="w-20 h-20 mx-auto text-emerald-600" />
-          <h1 className="text-4xl font-bold text-slate-900">
-            Student Portal
-          </h1>
-          <p className="text-slate-600 text-lg">
-            Join your class, upload your assignment, and get instant feedback on your originality score.
-          </p>
-          <div className="pt-8">
-            <Link
-              href="/student/login"
-              className="px-8 py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-lg shadow-lg transition-all transform hover:scale-105"
-            >
-              Join Class & Submit
-            </Link>
-          </div>
-          <div className="mt-12 text-sm text-slate-500 border border-slate-200 p-4 rounded bg-slate-50 text-left">
-            <strong className="block text-emerald-600 mb-2">Student Steps:</strong>
-            <ol className="list-decimal pl-5 space-y-1">
-              <li>Get 6-digit code from teacher</li>
-              <li>Enter Code & Name</li>
-              <li>Upload Docx or Paste Text</li>
-              <li>See your AI Result</li>
-            </ol>
-          </div>
-        </div>
+      <div id="how-it-works">
+        <RoleSwitcher />
       </div>
+
+      {/* Final CTA Section */}
+      <section className="py-24 bg-indigo-600 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-10"></div>
+        <div className="container mx-auto px-6 text-center relative z-10">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-white text-sm font-bold mb-8">
+            <Sparkles className="w-4 h-4 text-amber-300" />
+            <span>Join 500+ Educators today</span>
+          </div>
+          <h2 className="text-4xl md:text-5xl font-black text-white mb-8 tracking-tight">
+            Ready to upgrade your classroom?
+          </h2>
+          <button
+            onClick={() => setShowDemoModal(true)}
+            className="px-10 py-5 bg-white text-indigo-600 rounded-2xl font-bold text-lg hover:bg-indigo-50 transition-all shadow-xl shadow-indigo-900/20 active:scale-95"
+          >
+            Start Your Free Demo
+          </button>
+        </div>
+      </section>
+
+      <Footer />
+
+      {/* Demo Modal */}
+      {showDemoModal && (
+        <DemoSignupModal onClose={() => setShowDemoModal(false)} />
+      )}
     </main>
   );
 }

@@ -7,6 +7,7 @@ import { useToast } from '@/context/ToastContext';
 type RubricItem = {
     criterion: string;
     points: number;
+    description?: string;
     levels: { score: number; description: string }[]; // Keeping simple for now
 };
 
@@ -29,13 +30,30 @@ export default function RubricComponent({
 }) {
     const supabase = createClient();
     const { showToast } = useToast();
+    const normalizeRubric = (r: any): RubricItem[] => {
+        if (!r) return [];
+        let items: any[] = [];
+        if (Array.isArray(r)) {
+            items = r;
+        } else if (r.criteria && Array.isArray(r.criteria)) {
+            items = r.criteria;
+        }
+
+        return items.map(item => ({
+            criterion: item.criterion || item.title || '',
+            points: item.points || item.max_points || 0,
+            description: item.description || '',
+            levels: item.levels || []
+        }));
+    };
+
+    const [localRubric, setLocalRubric] = useState<RubricItem[]>(normalizeRubric(rubric));
     const [editingIndex, setEditingIndex] = useState<number | null>(null);
-    const [localRubric, setLocalRubric] = useState<RubricItem[]>(rubric || []);
     const [isSaving, setIsSaving] = useState(false);
     const [isRegenerating, setIsRegenerating] = useState(false);
 
     useEffect(() => {
-        setLocalRubric(rubric || []);
+        setLocalRubric(normalizeRubric(rubric));
     }, [rubric]);
 
     const handleRegenerate = async () => {
@@ -169,25 +187,40 @@ export default function RubricComponent({
                         {editingIndex === idx ? (
                             <div className="space-y-3">
                                 <div className="flex gap-3">
-                                    <input
-                                        className="flex-1 p-2 border border-slate-300 rounded-lg text-sm font-bold text-slate-700"
-                                        value={item.criterion}
-                                        onChange={(e) => {
-                                            const copy = [...localRubric];
-                                            copy[idx].criterion = e.target.value;
-                                            setLocalRubric(copy); // Optimistic update for input
-                                        }}
-                                    />
-                                    <input
-                                        type="number"
-                                        className="w-20 p-2 border border-slate-300 rounded-lg text-sm font-bold text-right"
-                                        value={item.points}
-                                        onChange={(e) => {
-                                            const copy = [...localRubric];
-                                            copy[idx].points = parseInt(e.target.value) || 0;
-                                            setLocalRubric(copy);
-                                        }}
-                                    />
+                                    <div className="flex-1 space-y-2">
+                                        <input
+                                            className="w-full p-2 border border-slate-300 rounded-lg text-sm font-bold text-slate-700"
+                                            value={item.criterion}
+                                            placeholder="Criterion Title"
+                                            onChange={(e) => {
+                                                const copy = [...localRubric];
+                                                copy[idx].criterion = e.target.value;
+                                                setLocalRubric(copy);
+                                            }}
+                                        />
+                                        <input
+                                            className="w-full p-2 border border-slate-300 rounded-lg text-xs text-slate-500"
+                                            value={item.description || ''}
+                                            placeholder="Short description (optional)"
+                                            onChange={(e) => {
+                                                const copy = [...localRubric];
+                                                copy[idx].description = e.target.value;
+                                                setLocalRubric(copy);
+                                            }}
+                                        />
+                                    </div>
+                                    <div className="w-20">
+                                        <input
+                                            type="number"
+                                            className="w-full p-2 border border-slate-300 rounded-lg text-sm font-bold text-right"
+                                            value={item.points}
+                                            onChange={(e) => {
+                                                const copy = [...localRubric];
+                                                copy[idx].points = parseInt(e.target.value) || 0;
+                                                setLocalRubric(copy);
+                                            }}
+                                        />
+                                    </div>
                                 </div>
                                 <div className="flex justify-end gap-2">
                                     <button
@@ -218,11 +251,13 @@ export default function RubricComponent({
                                             </button>
                                         )}
                                     </div>
-                                    <div className="text-xs text-slate-500 mt-1 leading-relaxed">
-                                        {item.levels && item.levels[0]?.description}
-                                    </div>
+                                    {item.description && (
+                                        <div className="text-xs text-slate-500 mt-1 leading-relaxed italic">
+                                            {item.description}
+                                        </div>
+                                    )}
                                 </div>
-                                <div className="flex items-center gap-1 bg-slate-100 px-2 py-1 rounded-lg">
+                                <div className="flex items-center gap-1 bg-slate-100 px-2 py-1 rounded-lg shrink-0 ml-4">
                                     <span className="font-bold text-slate-700 text-xs">{item.points}</span>
                                     <span className="text-[10px] text-slate-400 uppercase font-bold">pts</span>
                                 </div>

@@ -1,9 +1,11 @@
+
 'use client';
 
 import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
 import { AlertCircle, ArrowRight, Loader2 } from 'lucide-react';
+import DemoSignupModal from '@/components/auth/DemoSignupModal';
 
 function LoginContent() {
     const router = useRouter();
@@ -12,6 +14,7 @@ function LoginContent() {
     // State
     const [isSignUp, setIsSignUp] = useState(false);
     const [isReset, setIsReset] = useState(false); // Toggle for password reset
+    const [showDemoModal, setShowDemoModal] = useState(false);
 
     // Auth Fields
     const [email, setEmail] = useState('');
@@ -66,8 +69,6 @@ function LoginContent() {
                 }
 
                 setSuccessMsg('Account created! Please check your email to confirm your account.');
-                // Optional: Clear form or switch to login? 
-                // Currently keeping them on the same screen to see the message.
             } else {
                 // Sign In Flow
                 const { error: signInError } = await supabase.auth.signInWithPassword({
@@ -89,41 +90,6 @@ function LoginContent() {
         }
     };
 
-    const handleGuestLogin = async () => {
-        setLoading(true);
-        setError(null);
-        try {
-            const { data, error } = await supabase.auth.signInAnonymously();
-
-            if (error) throw error;
-
-            if (data.user) {
-                const { error: profileError } = await supabase
-                    .from('profiles')
-                    .insert([
-                        {
-                            id: data.user.id,
-                            role: 'instructor',
-                            full_name: 'Guest Instructor',
-                            email: 'guest@temp.com'
-                        }
-                    ]);
-
-                if (profileError) {
-                    // Ignore duplicate key error if profile exists
-                    if (profileError.code !== '23505') console.error("Profile creation failed", profileError);
-                }
-
-                router.push('/instructor/dashboard');
-                router.refresh();
-            }
-        } catch (err: any) {
-            setError(err.message || 'Failed to sign in as guest.');
-        } finally {
-            setLoading(false);
-        }
-    };
-
     // Determine the title based on mode
     const getTitle = () => {
         if (isReset) return 'Reset Password';
@@ -133,6 +99,8 @@ function LoginContent() {
 
     return (
         <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
+            {showDemoModal && <DemoSignupModal onClose={() => setShowDemoModal(false)} />}
+
             <div className="bg-white p-8 rounded-xl shadow-xl max-w-md w-full">
                 <h2 className="text-2xl font-bold mb-6 text-slate-800">
                     {getTitle()}
@@ -265,11 +233,12 @@ function LoginContent() {
                             </div>
 
                             <button
-                                onClick={handleGuestLogin}
+                                onClick={() => setShowDemoModal(true)}
                                 disabled={loading}
-                                className="w-full flex items-center justify-center gap-2 bg-slate-900 text-white py-3 px-4 rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-50 text-sm"
+                                className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3.5 px-4 rounded-xl hover:shadow-lg hover:scale-[1.02] transition-all disabled:opacity-50 text-sm font-bold active:scale-[0.98]"
                             >
-                                {loading ? 'Starting...' : 'Try as Guest (Demo)'}
+                                <Loader2 className="w-4 h-4 hidden" /> {/* Preload icon just in case? No need */}
+                                Try Demo Environment
                                 <ArrowRight className="w-4 h-4" />
                             </button>
                         </>

@@ -23,6 +23,9 @@ export const metadata: Metadata = {
 };
 
 import { ToastProvider } from "@/context/ToastContext";
+import DemoBanner from '@/components/DemoBanner';
+import { DemoTourProvider } from '@/context/DemoTourContext';
+import DemoTour from '@/components/DemoTour';
 
 export default function RootLayout({
   children,
@@ -36,7 +39,11 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <ToastProvider>
-          {children}
+          <DemoTourProvider>
+            <DemoBanner />
+            <DemoTour />
+            {children}
+          </DemoTourProvider>
         </ToastProvider>
       </body>
     </html>
