@@ -35,11 +35,11 @@ export default function Navbar({ onOpenDemo }: NavbarProps) {
                     <a href="#pricing" className="hover:text-white transition-colors">Pricing</a>
                 </div>
 
-                <div className="flex items-center gap-4">
-                    <Link href="/student/login" className="text-sm font-bold text-slate-300 hover:text-white transition-colors hidden md:block">
+                <div className="flex items-center gap-6">
+                    <Link href="/student/login" className="text-sm font-bold text-emerald-400 hover:text-emerald-300 transition-colors hidden md:block">
                         Student Login
                     </Link>
-                    <Link href="/login" className="text-sm font-bold text-white hover:text-indigo-400 transition-colors hidden md:block">
+                    <Link href="/login" className="text-sm font-bold text-white hover:text-indigo-300 transition-colors hidden md:block">
                         Instructor Login
                     </Link>
                     <button
