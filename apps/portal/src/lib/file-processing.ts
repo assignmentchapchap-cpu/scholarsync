@@ -1,8 +1,8 @@
-import { extractTextFromDocx } from "@schologic/doc-engine";
+import { extractTextFromDocx as extractDocxPackage } from "@schologic/doc-engine";
 
 export async function extractTextFromDocxFile(fileBuffer: Buffer): Promise<string> {
     try {
-        return await extractTextFromDocx(fileBuffer);
+        return await extractDocxPackage(fileBuffer);
     } catch (error) {
         console.error("File Processing Error:", error);
         throw new Error("Failed to process document");
