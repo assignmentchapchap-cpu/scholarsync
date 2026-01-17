@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -7,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { Home, Terminal, User, Upload, LogOut, GraduationCap, Calendar, Settings, FileText, Menu, X, Search, Plus, Bell, BookOpen } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import NotificationBell from './NotificationBell';
-import { createClient } from "@schologic/database";
+import { createClient } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 
 
