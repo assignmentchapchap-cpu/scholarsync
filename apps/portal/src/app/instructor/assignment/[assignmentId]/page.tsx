@@ -351,7 +351,7 @@ function GradingPage({ assignmentId }: { assignmentId: string }) {
                             <div className="p-8 animate-fade-in">
                                 <div className="max-w-4xl mx-auto">
                                     <RubricComponent
-                                        rubric={assignment?.rubric as any}
+                                        rubric={assignment?.rubric}
                                         isEditable={true}
                                         assignmentId={assignmentId}
                                         maxPoints={assignment?.max_points ?? 0}

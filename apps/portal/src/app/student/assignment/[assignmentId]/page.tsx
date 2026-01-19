@@ -170,7 +170,7 @@ function AssignmentSubmitPage({ assignmentId }: { assignmentId: string }) {
                     assignment_id: assignment.id,
                     content: cleaned,
                     ai_score: analysis.globalScore,
-                    report_data: analysis as any
+                    report_data: analysis as unknown as Database['public']['Tables']['submissions']['Row']['report_data']
                 })
                 .select()
                 .single();
@@ -518,7 +518,7 @@ function AssignmentSubmitPage({ assignmentId }: { assignmentId: string }) {
                             <div className="p-6 overflow-y-auto">
                                 <ReportView
                                     score={submission!.ai_score || 0}
-                                    reportData={submission!.report_data as any || {}}
+                                    reportData={submission!.report_data as Record<string, unknown> || {}}
                                     readOnly={true}
                                 />
                             </div>

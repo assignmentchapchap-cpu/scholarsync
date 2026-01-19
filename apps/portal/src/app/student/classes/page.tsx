@@ -53,7 +53,7 @@ export default function StudentClassesPage() {
             // Or assume typical join. Let's try to fetch profiles separately to be safe or map properly.
             // Ideally: classes(..., profiles(full_name)) but 'classes' usually links 'instructor_id' -> 'profiles.id'
 
-            const validData = (data as any[]).filter(d => d.classes);
+            const validData = (data ?? []).filter((d): d is typeof data[number] & { classes: NonNullable<typeof d.classes> } => d.classes !== null);
 
             // Enrich with instructor names
             const enriched = await Promise.all(validData.map(async (item) => {
