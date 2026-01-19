@@ -82,9 +82,10 @@ function LoginContent() {
                 router.push('/instructor/dashboard');
                 router.refresh();
             }
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('Auth error:', err);
-            setError(err.message || 'Authentication failed.');
+            const message = err instanceof Error ? err.message : 'Authentication failed.';
+            setError(message);
         } finally {
             setLoading(false);
         }

@@ -66,9 +66,10 @@ export default function StudentLoginPage() {
                 router.push('/student/dashboard');
             }
 
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Join Error", error);
-            alert("Failed to join. " + error.message);
+            const message = error instanceof Error ? error.message : 'Failed to join.';
+            alert("Failed to join. " + message);
         } finally {
             setLoading(false);
         }

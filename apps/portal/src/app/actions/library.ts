@@ -1,9 +1,10 @@
 'use server';
 
-import { createSessionClient } from "@schologic/database";
+import { createSessionClient, Database } from "@schologic/database";
 import { put } from '@vercel/blob';
 import { revalidatePath } from 'next/cache';
-import { Asset, AssetType } from '@/types/library';
+import { Asset, AssetType, AssetSource } from '@/types/library';
+import { AssetContent } from '@/types/json-schemas';
 import { extractTextFromFile } from '@schologic/doc-engine';
 import { cookies } from 'next/headers';
 
@@ -40,7 +41,7 @@ export async function getAssets(collectionId?: string | null) {
             file_url: row.file_url,
             asset_type: row.asset_type as AssetType,
             mime_type: row.mime_type,
-            source: row.source as any, // Type narrowing if 'manual' | 'upload' etc match
+            source: row.source as AssetSource,
             parent_asset_id: row.parent_asset_id,
             collection_id: row.collection_id,
             instructor_id: row.instructor_id,
@@ -94,7 +95,7 @@ export async function uploadFileAsset(formData: FormData, collectionId?: string)
     // Smart Title Logic
     const finalTitle = (title === file.name && extractedTitle) ? extractedTitle : (title || extractedTitle || file.name);
 
-    const { error } = await supabase.from('assets' as any).insert({
+    const { error } = await supabase.from('assets').insert({
         title: finalTitle,
         file_url: blob.url,
         content: extractedContent,
@@ -109,15 +110,15 @@ export async function uploadFileAsset(formData: FormData, collectionId?: string)
     revalidatePath('/instructor/library');
 }
 
-export async function createManualAsset(title: string, content: any, collectionId?: string) {
+export async function createManualAsset(title: string, content: AssetContent | string, collectionId?: string) {
     const cookieStore = await cookies();
     const supabase = createSessionClient(cookieStore);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Unauthorized');
 
-    const { error } = await supabase.from('assets' as any).insert({
+    const { error } = await supabase.from('assets').insert({
         title,
-        content,
+        content: content as unknown as Database['public']['Tables']['assets']['Row']['content'],
         asset_type: 'document',
         source: 'manual',
         collection_id: collectionId || null,
@@ -135,7 +136,7 @@ export async function deleteAssets(ids: string[]) {
     if (!user) throw new Error('Unauthorized');
 
     const { error } = await supabase
-        .from('assets' as any)
+        .from('assets')
         .delete()
         .in('id', ids)
         .eq('instructor_id', user.id); // Security check
@@ -151,7 +152,7 @@ export async function deleteAsset(id: string) {
     if (!user) throw new Error('Unauthorized');
 
     const { error } = await supabase
-        .from('assets' as any)
+        .from('assets')
         .delete()
         .eq('id', id)
         .eq('instructor_id', user.id); // Security check

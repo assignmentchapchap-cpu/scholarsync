@@ -3,13 +3,13 @@
 
 import { useState } from 'react';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock, List, Grid, Plus, X } from 'lucide-react';
-import { createClient } from "@schologic/database";
+import { createClient, Database } from "@schologic/database";
 import { useToast } from '@/context/ToastContext';
 
 interface DashboardCalendarProps {
-    assignments: any[];
-    events: any[]; // New prop for events
-    onEventCreated: (event: any) => void;
+    assignments: Database['public']['Tables']['assignments']['Row'][];
+    events: Database['public']['Tables']['instructor_events']['Row'][];
+    onEventCreated: (event: Database['public']['Tables']['instructor_events']['Row']) => void;
 }
 
 export default function DashboardCalendar({ assignments, events = [], onEventCreated }: DashboardCalendarProps) {
@@ -110,9 +110,10 @@ export default function DashboardCalendar({ assignments, events = [], onEventCre
                     throw new Error(error.message);
                 }
             }
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error(err);
-            showToast(err.message || 'Failed to create event.', 'error');
+            const message = err instanceof Error ? err.message : 'Failed to create event.';
+            showToast(message, 'error');
         } finally {
             setIsSubmitting(false);
         }

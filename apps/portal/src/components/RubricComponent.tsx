@@ -2,15 +2,9 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { Sparkles, Edit2, Check, X, Trash2, Plus, RefreshCw, AlertCircle } from 'lucide-react';
-import { createClient } from "@schologic/database";
+import { createClient, Database } from "@schologic/database";
 import { useToast } from '@/context/ToastContext';
-
-type RubricItem = {
-    criterion: string;
-    points: number;
-    description?: string;
-    levels: { score: number; description: string }[]; // Keeping simple for now
-};
+import { RubricItem, normalizeRubric } from '@/types/json-schemas';
 
 export default function RubricComponent({
     rubric,
@@ -21,7 +15,7 @@ export default function RubricComponent({
     title,
     description
 }: {
-    rubric: RubricItem[],
+    rubric: RubricItem[] | unknown,
     isEditable?: boolean,
     assignmentId?: string,
     maxPoints?: number,
@@ -31,22 +25,6 @@ export default function RubricComponent({
 }) {
     const supabase = createClient();
     const { showToast } = useToast();
-    const normalizeRubric = (r: any): RubricItem[] => {
-        if (!r) return [];
-        let items: any[] = [];
-        if (Array.isArray(r)) {
-            items = r;
-        } else if (r.criteria && Array.isArray(r.criteria)) {
-            items = r.criteria;
-        }
-
-        return items.map(item => ({
-            criterion: item.criterion || item.title || '',
-            points: item.points || item.max_points || 0,
-            description: item.description || '',
-            levels: item.levels || []
-        }));
-    };
 
     const [localRubric, setLocalRubric] = useState<RubricItem[]>(normalizeRubric(rubric));
     const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -89,9 +67,9 @@ export default function RubricComponent({
                 await handleSave(data.rubric); // Save directly to DB
                 showToast("Rubric Generated!", 'success');
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Regeneration Error:", error);
-            showToast("Generation failed: " + error.message, 'error');
+            showToast("Generation failed: " + (error instanceof Error ? error.message : String(error)), 'error');
         } finally {
             setIsRegenerating(false);
         }
@@ -114,7 +92,7 @@ export default function RubricComponent({
 
         const { error } = await supabase
             .from('assignments')
-            .update({ rubric: newRubric })
+            .update({ rubric: newRubric as unknown as Database['public']['Tables']['assignments']['Row']['rubric'] })
             .eq('id', assignmentId);
 
         if (!error) {
@@ -231,7 +209,7 @@ export default function RubricComponent({
                                 </div>
                                 <div className="flex justify-end gap-2">
                                     <button
-                                        onClick={() => setLocalRubric(rubric)} // Cancel
+                                        onClick={() => setLocalRubric(normalizeRubric(rubric))} // Cancel
                                         className="p-1 px-3 text-xs font-bold text-slate-500 bg-slate-100 rounded hover:bg-slate-200"
                                     >
                                         Cancel

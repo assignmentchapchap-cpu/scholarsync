@@ -23,9 +23,10 @@ export default function AssetEditor({ onClose, onSuccess }: AssetEditorProps) {
             await createManualAsset(title, content);
             showToast('Asset Created Successfully', 'success');
             onSuccess();
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error(error);
-            showToast(error.message || 'Failed to create asset', 'error');
+            const message = error instanceof Error ? error.message : 'Failed to create asset';
+            showToast(message, 'error');
         } finally {
             setSaving(false);
         }

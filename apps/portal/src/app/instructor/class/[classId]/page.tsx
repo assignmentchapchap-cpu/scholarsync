@@ -19,15 +19,7 @@ import { isDateBetween, isDateAfter } from '@/lib/date-utils';
 import jsPDF from 'jspdf';
 import AIStatsCard from '@/components/AIStatsCard';
 import AIInsightsModal from '@/components/AIInsightsModal';
-
-// Manual type definitions (until we have better generic support or Json handling)
-interface ClassSettings {
-    model: string;
-    granularity: string;
-    scoring_method: string;
-    late_policy: string;
-    allowed_file_types: string[];
-}
+import { ClassSettings, DEFAULT_CLASS_SETTINGS } from '@/types/json-schemas';
 
 type ClassData = Database['public']['Tables']['classes']['Row'] & { settings?: ClassSettings | null };
 type Assignment = Database['public']['Tables']['assignments']['Row'];
@@ -43,16 +35,8 @@ type SubmissionWithProfile = Submission & {
     } | null;
 };
 
-type EnrollmentProfile = {
-    id: string;
-    student_id: string;
-    joined_at: string;
-    profiles: {
-        full_name: string | null;
-        email: string | null;
-        avatar_url: string | null;
-        registration_number: string | null;
-    } | null; // Join result
+type EnrollmentProfile = Database['public']['Tables']['enrollments']['Row'] & {
+    profiles: Database['public']['Tables']['profiles']['Row'] | null;
 };
 
 export default function ClassDetailsPage({ params }: { params: Promise<{ classId: string }> }) {
@@ -558,10 +542,10 @@ function ClassDetailsContent({ classId }: { classId: string }) {
         setSavingSettings(true);
         try {
             const updatePayload = isOverriding ? settingsForm : null;
-            // Type-safe update: casting payload to unknown -> Json since ClassSettings is just an object
+            // Type-safe: ClassSettings is compatible with Json
             const { error } = await supabase
                 .from('classes')
-                .update({ settings: updatePayload as unknown as any }) // Use 'any' sparingly here if strict Json type is tricky, effectively generic object
+                .update({ settings: updatePayload as Database['public']['Tables']['classes']['Row']['settings'] })
                 .eq('id', classId);
 
             if (error) throw error;
@@ -1775,7 +1759,7 @@ function ClassDetailsContent({ classId }: { classId: string }) {
                                                         {enroll.profiles?.email || '-'}
                                                     </td>
                                                     <td className="p-4 text-sm text-slate-400 text-right font-medium">
-                                                        {new Date(enroll.joined_at).toLocaleDateString()}
+                                                        {new Date(enroll.joined_at || '').toLocaleDateString()}
                                                     </td>
                                                 </tr>
                                             ))}

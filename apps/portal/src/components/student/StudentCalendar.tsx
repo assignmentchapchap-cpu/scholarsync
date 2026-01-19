@@ -2,13 +2,15 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { createClient } from "@schologic/database";
+import { createClient, Database } from "@schologic/database";
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
 import Link from 'next/link';
 
+type Assignment = Database['public']['Tables']['assignments']['Row'];
+
 export default function StudentCalendar() {
     const [currentDate, setCurrentDate] = useState(new Date());
-    const [assignments, setAssignments] = useState<any[]>([]);
+    const [assignments, setAssignments] = useState<Assignment[]>([]);
     const [loading, setLoading] = useState(true);
     const supabase = createClient();
 
@@ -22,8 +24,8 @@ export default function StudentCalendar() {
             if (!user) return;
 
             // 1. Get Enrolled Classes
-            const { data: enrollments } = await (supabase
-                .from('enrollments') as any)
+            const { data: enrollments } = await supabase
+                .from('enrollments')
                 .select('class_id')
                 .eq('student_id', user.id);
 
@@ -32,15 +34,15 @@ export default function StudentCalendar() {
                 return;
             }
 
-            const classIds = enrollments.map((e: any) => e.class_id);
+            const classIds = enrollments.map(e => e.class_id);
 
             // 2. Get Assignments for the current month
             const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).toISOString();
             const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).toISOString();
 
-            const { data: assign, error } = await (supabase
-                .from('assignments') as any)
-                .select(`id, title, due_date, class_id`)
+            const { data: assign, error } = await supabase
+                .from('assignments')
+                .select(`*`) // Select all fields to match strict type
                 .in('class_id', classIds)
                 .gte('due_date', startOfMonth)
                 .lte('due_date', endOfMonth);

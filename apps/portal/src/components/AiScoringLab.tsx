@@ -82,9 +82,10 @@ export default function AiScoringLab() {
             const data = await response.json();
             setRawResults(data.segments);
 
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error(err);
-            setError(err.message || "Engine Error: Failed to reach model.");
+            const message = err instanceof Error ? err.message : 'Engine Error: Failed to reach model.';
+            setError(message);
         } finally {
             setTimeout(() => setLoading(false), 300);
         }

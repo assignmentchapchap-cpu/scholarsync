@@ -1,13 +1,22 @@
+'use client';
+
 import { X, AlertTriangle, CheckCircle, TrendingUp, Users, ArrowRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { Database } from "@schologic/database";
+
+type Assignment = Database['public']['Tables']['assignments']['Row'];
+type Submission = Database['public']['Tables']['submissions']['Row'];
+type EnrollmentWithProfile = Database['public']['Tables']['enrollments']['Row'] & {
+    profiles: Database['public']['Tables']['profiles']['Row'] | null;
+};
 
 interface AIInsightsModalProps {
     isOpen: boolean;
     onClose: () => void;
     averageScore: number;
-    assignments?: any[]; // Optional if customTrendData is provided
-    submissions: any[]; // Aggregated submissions
-    enrollments: any[];
+    assignments?: Assignment[]; // Optional if customTrendData is provided
+    submissions: Submission[]; // Aggregated submissions
+    enrollments: EnrollmentWithProfile[];
     onStudentClick: (studentId: string, studentName: string) => void;
     customTrendData?: {
         label: string;
@@ -55,7 +64,7 @@ export default function AIInsightsModal({ isOpen, onClose, averageScore, assignm
     const studentRiskMap = new Map<string, { count: number, lastScore: number, studentId: string }>();
 
     submissions.forEach(sub => {
-        if (sub.ai_score !== null && sub.ai_score > 50) { // Threshold for "Risky" > 50% AI confidence
+        if (sub.ai_score !== null && sub.ai_score > 50 && sub.student_id) { // Threshold for "Risky" > 50% AI confidence + Valid Student ID
             const current = studentRiskMap.get(sub.student_id) || { count: 0, lastScore: 0, studentId: sub.student_id };
             current.count += 1;
             // Track the HIGHEST AI score (lowest authenticity)

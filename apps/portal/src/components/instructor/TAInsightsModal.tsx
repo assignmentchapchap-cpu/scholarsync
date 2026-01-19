@@ -96,9 +96,10 @@ export default function TAInsightsModal({
                 throw new Error("Invalid response format");
             }
 
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error(err);
-            setError(err.message || 'Something went wrong.');
+            const message = err instanceof Error ? err.message : 'Something went wrong.';
+            setError(message);
         } finally {
             setLoading(false);
         }

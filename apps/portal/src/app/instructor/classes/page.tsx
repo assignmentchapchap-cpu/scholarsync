@@ -118,9 +118,10 @@ function ClassesContent() {
             setErrors({});
             setCreating(false);
             showToast('Class Created Successfully!', 'success');
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Error creating class:', error);
-            showToast(error.message, 'error');
+            const message = error instanceof Error ? error.message : 'Failed to create class.';
+            showToast(message, 'error');
         }
     };
 

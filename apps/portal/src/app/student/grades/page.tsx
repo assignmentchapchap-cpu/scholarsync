@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -9,16 +8,13 @@ import { Database } from "@schologic/database";
 import { jsPDF } from "jspdf";
 import { useToast } from '@/context/ToastContext';
 
-type EnrollmentProfile = {
-    id: string;
-    class_id: string;
-    classes: {
-        id: string;
-        name: string;
-        class_code: string;
-        instructor_id: string;
-    } | null;
+// Define strict types for joined queries
+type EnrollmentWithClass = Database['public']['Tables']['enrollments']['Row'] & {
+    classes: Database['public']['Tables']['classes']['Row'] | null;
 };
+
+type Assignment = Database['public']['Tables']['assignments']['Row'];
+type Submission = Database['public']['Tables']['submissions']['Row'];
 
 type ClassSummary = {
     class_id: string;
@@ -58,14 +54,15 @@ export default function StudentGradesPage() {
             const { data: enrolls, error: enrollErr } = await supabase
                 .from('enrollments')
                 .select(`
-                    id, class_id,
-                    classes (id, name, class_code, instructor_id)
+                    *,
+                    classes (*)
                 `)
                 .eq('student_id', user.id);
 
             if (enrollErr) throw enrollErr;
 
-            const validEnrolls = (enrolls as any[]).filter(e => e.classes) as EnrollmentProfile[];
+            // Strict filter: ensure class exists
+            const validEnrolls = (enrolls as unknown as EnrollmentWithClass[]).filter(e => e.classes !== null);
             const classIds = validEnrolls.map(e => e.class_id);
 
             if (classIds.length === 0) {
@@ -76,7 +73,7 @@ export default function StudentGradesPage() {
             // 2. Fetch Assignments for these classes
             const { data: assignments, error: assignErr } = await supabase
                 .from('assignments')
-                .select('id, class_id, max_points')
+                .select('*')
                 .in('class_id', classIds);
 
             if (assignErr) throw assignErr;
@@ -84,7 +81,7 @@ export default function StudentGradesPage() {
             // 3. Fetch Submissions for these classes
             const { data: submissions, error: subErr } = await supabase
                 .from('submissions')
-                .select('id, class_id, assignment_id, grade, ai_score')
+                .select('*')
                 .eq('student_id', user.id)
                 .in('class_id', classIds);
 
@@ -102,7 +99,10 @@ export default function StudentGradesPage() {
                 // Normalized to 100%
                 const percentage = totalPossible > 0 ? (totalEarned / totalPossible) * 100 : 0;
 
-                const aiScores = classSubs.filter(s => s.ai_score !== null && s.ai_score !== undefined).map(s => s.ai_score as number);
+                const aiScores = classSubs
+                    .filter(s => typeof s.ai_score === 'number')
+                    .map(s => s.ai_score as number); // Verified by filter above
+
                 const avgAi = aiScores.length > 0 ? Math.round(aiScores.reduce((a, b) => a + b, 0) / aiScores.length) : null;
 
                 return {

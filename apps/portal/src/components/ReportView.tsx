@@ -14,6 +14,14 @@ function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
 }
 
+interface LegacySegment {
+    paragraph?: string;
+    sentence?: string;
+    score?: number;
+    isSuspected?: boolean;
+    isFlagged?: boolean;
+}
+
 interface ReportViewProps {
     score: number;
     reportData: {
@@ -22,8 +30,8 @@ interface ReportViewProps {
         totalWords?: number;
         overallReason?: string;
         // Legacy fallback
-        paragraphs?: any[];
-        sentences?: any[];
+        paragraphs?: LegacySegment[];
+        sentences?: LegacySegment[];
     };
     readOnly?: boolean;
 }
@@ -33,8 +41,8 @@ export default function ReportView({ score, reportData, readOnly = false }: Repo
 
     // Normalize data structure handling both legacy and new API formats
     const segments: AnalysisSegment[] = reportData.segments ||
-        (reportData.paragraphs || reportData.sentences || []).map((s: any) => ({
-            text: s.paragraph || s.sentence,
+        (reportData.paragraphs || reportData.sentences || []).map((s) => ({
+            text: s.paragraph || s.sentence || "",
             prob: s.score || (s.isSuspected ? 1 : 0),
             words: (s.paragraph || s.sentence || "").split(/\s+/).length,
             isFlagged: s.isFlagged || s.isSuspected,

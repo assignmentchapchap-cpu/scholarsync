@@ -37,9 +37,10 @@ export default function AssetUploader({ onClose, onSuccess }: AssetUploaderProps
             await uploadFileAsset(formData);
             showToast('File uploaded successfully', 'success');
             onSuccess();
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error(err);
-            setError(err.message || "Upload failed");
+            const message = err instanceof Error ? err.message : 'Upload failed';
+            setError(message);
             showToast("Upload failed", 'error');
         } finally {
             setUploading(false);

@@ -74,7 +74,7 @@ export default function LibraryView({ initialAssets }: LibraryViewProps) {
                 setAssets(prev => prev.filter(a => a.id !== assetToDelete));
                 showToast('Asset deleted', 'success');
             }
-        } catch (e: any) {
+        } catch (e: unknown) {
             showToast('Failed to delete asset(s)', 'error');
         } finally {
             setAssetToDelete(null);

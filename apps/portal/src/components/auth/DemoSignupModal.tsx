@@ -88,9 +88,10 @@ export default function DemoSignupModal({ onClose }: DemoSignupModalProps) {
                 throw new Error(data.error || 'Failed to create demo account');
             }
 
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error(error);
-            showToast(error.message, 'error');
+            const message = error instanceof Error ? error.message : 'Something went wrong.';
+            showToast(message, 'error');
             setStep('form');
             setLoading(false);
         }

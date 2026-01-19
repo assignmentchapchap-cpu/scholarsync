@@ -159,9 +159,10 @@ export default function InstructorProfilePage() {
             // Optimistic update
             if (profile) setProfile({ ...profile, full_name: fullName, title: formData.title, first_name: formData.first_name, last_name: formData.last_name, bio: formData.bio, avatar_url: formData.avatar_url });
             showToast('Profile updated successfully!', 'success');
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Error updating profile', error);
-            showToast(error.message || 'Failed to update profile.', 'error');
+            const message = error instanceof Error ? error.message : 'Failed to update profile.';
+            showToast(message, 'error');
         } finally {
             setSaving(false);
         }

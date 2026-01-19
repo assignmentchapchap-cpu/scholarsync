@@ -219,8 +219,9 @@ export async function POST(req: Request) {
             demo_student_email: students[4]?.email
         });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Demo Setup Error:", error);
-        return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+        const message = error instanceof Error ? error.message : 'Internal Server Error';
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }

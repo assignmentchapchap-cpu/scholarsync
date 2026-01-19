@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { createClient } from "@schologic/database";
 import { Settings, Save, Brain, CheckCircle, Clock, Loader2 } from 'lucide-react';
 import { MODELS, MODEL_LABELS, ScoringMethod, Granularity } from '@/lib/ai-config';
+import { ClassSettings, isClassSettings } from '@/types/json-schemas';
 
 export default function InstructorSettingsPage() {
     const supabase = createClient();
@@ -39,12 +40,12 @@ export default function InstructorSettingsPage() {
 
             if (error) throw error;
 
-            if (data?.settings) {
-                const s = data.settings as any;
+            if (data?.settings && isClassSettings(data.settings)) {
+                const s = data.settings;
                 setSettingsForm({
                     model: s.model || MODELS.ROBERTA_LARGE,
-                    granularity: s.granularity || Granularity.PARAGRAPH,
-                    scoring_method: s.scoring_method || ScoringMethod.WEIGHTED,
+                    granularity: (s.granularity as Granularity) || Granularity.PARAGRAPH,
+                    scoring_method: (s.scoring_method as ScoringMethod) || ScoringMethod.WEIGHTED,
                     late_policy: s.late_policy || 'strict',
                     allowed_file_types: s.allowed_file_types || ['txt', 'docx']
                 });
@@ -76,9 +77,9 @@ export default function InstructorSettingsPage() {
             if (error) throw error;
             alert("Password updated successfully!");
             setPasswordForm({ newPassword: '', confirmPassword: '' });
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Error updating password", error);
-            alert(error.message || "Failed to update password");
+            alert((error instanceof Error ? error.message : String(error)) || "Failed to update password");
         } finally {
             setSaving(false);
         }

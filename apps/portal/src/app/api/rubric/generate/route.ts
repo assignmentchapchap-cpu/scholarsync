@@ -21,8 +21,9 @@ export async function POST(req: Request) {
 
         return NextResponse.json({ rubric });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Rubric Generation Error:", error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        const message = error instanceof Error ? error.message : 'Rubric generation failed.';
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }

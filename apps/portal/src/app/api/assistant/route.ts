@@ -36,8 +36,9 @@ export async function POST(req: Request) {
 
         return NextResponse.json({ analysis });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("TA API Error:", error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        const message = error instanceof Error ? error.message : 'TA analysis failed.';
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }

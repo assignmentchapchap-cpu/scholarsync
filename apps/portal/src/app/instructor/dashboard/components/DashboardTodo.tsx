@@ -4,19 +4,17 @@
 import { useState, useEffect } from 'react';
 import { CheckSquare, Plus, Trash2, Check } from 'lucide-react';
 
-import { createClient } from "@schologic/database";
+import { createClient, Database } from "@schologic/database";
 
-interface Todo {
-    id: string;
-    text: string;
-    completed: boolean;
-}
+type Todo = Database['public']['Tables']['instructor_todos']['Row'];
+type TodoInsert = Database['public']['Tables']['instructor_todos']['Insert'];
 
 export default function DashboardTodo() {
     const supabase = createClient();
     const [todos, setTodos] = useState<Todo[]>([]);
     const [newTodo, setNewTodo] = useState('');
     const [loading, setLoading] = useState(true);
+    const [userId, setUserId] = useState<string | null>(null);
 
     // Load from Supabase on mount
     useEffect(() => {
@@ -27,6 +25,7 @@ export default function DashboardTodo() {
         try {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
+            setUserId(user.id);
 
             const { data, error } = await supabase
                 .from('instructor_todos')
@@ -37,7 +36,7 @@ export default function DashboardTodo() {
             if (data) {
                 if (data.length === 0) {
                     // Inject Default Tasks for Onboarding
-                    const defaultTasks = [
+                    const defaultTasks: TodoInsert[] = [
                         { user_id: user.id, text: "Complete your instructor profile", completed: false },
                         { user_id: user.id, text: "Create your first class", completed: false },
                         { user_id: user.id, text: "Configure class settings", completed: false },
@@ -51,11 +50,10 @@ export default function DashboardTodo() {
                         .select();
 
                     if (newTasks) {
-                        const safeTasks = newTasks.map(t => ({ ...t, completed: t.completed ?? false }));
-                        setTodos(safeTasks);
+                        setTodos(newTasks);
                     }
                 } else {
-                    setTodos(data.map(t => ({ ...t, completed: t.completed ?? false })));
+                    setTodos(data);
                 }
             }
         } catch (error) {
@@ -74,7 +72,15 @@ export default function DashboardTodo() {
 
         // Optimistic UI update
         const tempId = Date.now().toString();
-        const optimisticTodo = { id: tempId, text, completed: false };
+        // Construct a partial-like object cast as Todo ONLY for UI temporarily
+        // Note: created_at/updated_at are required by type, so we must mock them
+        const optimisticTodo: Todo = {
+            id: tempId,
+            text,
+            completed: false,
+            user_id: userId || 'temp', // Fallback if userId not yet set (unlikely)
+            created_at: new Date().toISOString()
+        };
         setTodos([optimisticTodo, ...todos]);
 
         try {
@@ -89,7 +95,7 @@ export default function DashboardTodo() {
 
             if (data) {
                 // Replace optimistic todo with real one
-                setTodos(prev => prev.map(t => t.id === tempId ? { ...data, completed: data.completed ?? false } : t));
+                setTodos(prev => prev.map(t => t.id === tempId ? data : t));
             } else {
                 // Revert on failure
                 fetchTodos();
@@ -168,7 +174,7 @@ export default function DashboardTodo() {
                             className={`group flex items-start gap-1.5 p-1.5 rounded-lg transition-all ${todo.completed ? 'bg-slate-50 opacity-70' : 'bg-white border border-slate-100 hover:border-emerald-200 hover:shadow-sm'}`}
                         >
                             <button
-                                onClick={() => toggleTodo(todo.id, todo.completed)}
+                                onClick={() => toggleTodo(todo.id, todo.completed ?? false)}
                                 className={`w-3.5 h-3.5 mt-0.5 rounded border flex items-center justify-center transition-colors flex-shrink-0 ${todo.completed ? 'bg-emerald-500 border-emerald-500' : 'border-slate-300 hover:border-emerald-400'}`}
                             >
                                 {todo.completed && <Check className="w-2.5 h-2.5 text-white" />}
