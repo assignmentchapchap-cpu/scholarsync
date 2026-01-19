@@ -49,13 +49,13 @@ export default function StudentCalendarPage() {
                 .in('class_id', classIds);
 
             if (assigns) {
-                const events = assigns.map((a: any) => ({
+                const events = assigns.map((a) => ({
                     id: a.id,
                     title: a.title,
                     due_date: a.due_date,
-                    class_name: a.classes?.name || 'Unknown Class',
-                    class_id: a.class_id
-                })).filter((a: any) => a.due_date); // Only those with due dates
+                    class_name: (a.classes as { name: string } | null)?.name || 'Unknown Class',
+                    class_id: a.class_id!
+                })).filter((a) => a.due_date); // Only those with due dates
                 setAssignments(events);
             }
 

@@ -183,9 +183,9 @@ function AssignmentSubmitPage({ assignmentId }: { assignmentId: string }) {
             // Optional: Auto-open report
             setShowReport(true);
 
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Submission Error", error);
-            alert("Submission failed: " + error.message);
+            alert("Submission failed: " + (error instanceof Error ? error.message : String(error)));
         } finally {
             setAnalyzing(false);
         }
@@ -229,8 +229,8 @@ function AssignmentSubmitPage({ assignmentId }: { assignmentId: string }) {
             if (text) {
                 await handleSubmission(text);
             }
-        } catch (err: any) {
-            alert("Error processing file: " + err.message);
+        } catch (err: unknown) {
+            alert("Error processing file: " + (err instanceof Error ? err.message : String(err)));
         } finally {
             setUploading(false);
         }

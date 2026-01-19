@@ -6,7 +6,7 @@ import { extractTextFromDocx, extractTextFromPdf } from "@schologic/doc-engine";
  * Wraps package calls for PDF and DOCX.
  * IMSCC handling remains local for now as it's portal-specific logic.
  */
-export async function extractTextFromFile(file: File): Promise<{ content: any, title?: string } | null> {
+export async function extractTextFromFile(file: File): Promise<{ content: unknown, title?: string } | null> {
     try {
         const buffer = Buffer.from(await file.arrayBuffer());
         const type = file.type;
@@ -42,7 +42,7 @@ export async function parseDocx(buffer: Buffer): Promise<string | null> {
     return extractTextFromDocx(buffer);
 }
 
-async function extractImsccSafe(buffer: Buffer): Promise<{ content: any, title?: string } | null> {
+async function extractImsccSafe(buffer: Buffer): Promise<{ content: unknown, title?: string } | null> {
     try {
         console.log("Loading JSZip & xml2js...");
         const JSZip = require('jszip');
@@ -52,7 +52,7 @@ async function extractImsccSafe(buffer: Buffer): Promise<{ content: any, title?:
 
         // Find imsmanifest.xml anywhere in the zip (ignoring case and __MACOSX)
         let manifestPath: string | null = null;
-        zip.forEach((relativePath: string, file: any) => {
+        zip.forEach((relativePath: string, file: { name: string }) => {
             if (relativePath.toLowerCase().endsWith('imsmanifest.xml') && !relativePath.includes('__MACOSX')) {
                 manifestPath = relativePath;
             }

@@ -57,12 +57,18 @@ export async function POST(req: NextRequest) {
 
                 const data = await response.json();
 
+                // Score result from HuggingFace inference
+                interface ScoreResult {
+                    label: string;
+                    score: number;
+                }
+
                 // Robust parsing logic
-                const scores = Array.isArray(data) && Array.isArray(data[0]) ? data[0] : (Array.isArray(data) ? data : []);
+                const scores: ScoreResult[] = Array.isArray(data) && Array.isArray(data[0]) ? data[0] : (Array.isArray(data) ? data : []);
 
                 // Labels that indicate AI
                 const aiLabels = ["ChatGPT", "LABEL_1", "fake", "Fake", "AI", "ai", "AI-Generated"];
-                const aiScoreOb = scores.find((s: any) => aiLabels.includes(s.label));
+                const aiScoreOb = scores.find((s) => aiLabels.includes(s.label));
 
                 let aiProb = 0;
 
@@ -70,7 +76,7 @@ export async function POST(req: NextRequest) {
                     aiProb = aiScoreOb.score;
                 } else {
                     // Fallback: If we only have LABEL_0 and LABEL_1 and neither matched above, check specifically for LABEL_1
-                    const label1 = scores.find((s: any) => s.label === "LABEL_1");
+                    const label1 = scores.find((s) => s.label === "LABEL_1");
                     if (label1) aiProb = label1.score;
                 }
 
