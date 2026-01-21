@@ -3,9 +3,11 @@
 import React, { useState, useEffect } from 'react';
 import { X, FileText, Maximize2, Minimize2, Sparkles, List, ZoomIn, ZoomOut, Search, ChevronUp, ChevronDown } from 'lucide-react';
 import { useReaderSearch } from '@/hooks/useReaderSearch';
+import dynamic from 'next/dynamic';
 import DocxViewer from './DocxViewer';
-import PdfViewer from './PdfViewer';
+const PdfViewer = dynamic(() => import('./PdfViewer'), { ssr: false });
 import { Asset } from '@/types/library';
+import { generateSummary } from '@/app/actions/summarize';
 
 interface UniversalReaderProps {
     asset: Asset;
@@ -13,17 +15,22 @@ interface UniversalReaderProps {
     isOpen?: boolean;
 }
 
-
-
 export default function UniversalReader({ asset, onClose, isOpen = true }: UniversalReaderProps) {
     const [isMaximized, setIsMaximized] = useState(false);
     const [isOutlineOpen, setIsOutlineOpen] = useState(false);
     const [isAISidebarOpen, setIsAISidebarOpen] = useState(false);
     const [zoomLevel, setZoomLevel] = useState(1);
     const [isSearchOpen, setIsSearchOpen] = useState(false);
+
+    // Viewer & Search
     const viewerRef = React.useRef<HTMLDivElement>(null);
     const { search, clear, currentMatchIndex, totalMatches, nextMatch, prevMatch } = useReaderSearch(viewerRef);
     const [searchQuery, setSearchQuery] = useState('');
+
+    // AI State
+    const [summary, setSummary] = useState<string[] | null>(null);
+    const [isSummarizing, setIsSummarizing] = useState(false);
+    const [aiError, setAiError] = useState<string | null>(null);
 
     // Live search with debounce
     useEffect(() => {
@@ -69,6 +76,23 @@ export default function UniversalReader({ asset, onClose, isOpen = true }: Unive
             setIsOutlineOpen(false);
         }
         setIsAISidebarOpen(!isAISidebarOpen);
+    };
+
+    const handleSummarize = async () => {
+        if (isSummarizing) return;
+
+        setIsSummarizing(true);
+        setAiError(null);
+
+        const result = await generateSummary(asset.file_url || '', asset.mime_type || '');
+
+        if (result.error) {
+            setAiError(result.error);
+        } else if (result.summary) {
+            setSummary(result.summary);
+        }
+
+        setIsSummarizing(false);
     };
 
     if (!isOpen) return null;
@@ -262,13 +286,66 @@ export default function UniversalReader({ asset, onClose, isOpen = true }: Unive
                             </button>
                         </div>
 
-                        {/* AI Sidebar Content - Placeholder */}
+                        {/* AI Sidebar Content */}
                         <div className="flex-1 overflow-y-auto p-4">
-                            <div className="text-center text-gray-400 py-12">
-                                <Sparkles className="w-8 h-8 mx-auto mb-3 opacity-50" />
-                                <p className="text-sm">AI features coming soon</p>
-                                <p className="text-xs mt-1">Summarize, explain, quiz and more</p>
-                            </div>
+                            {summary ? (
+                                <div className="space-y-4 animate-in fade-in duration-300">
+                                    <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                                        <Sparkles className="w-4 h-4 text-indigo-600" />
+                                        Document Summary
+                                    </h3>
+                                    <div className="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100">
+                                        <ul className="space-y-3">
+                                            {summary.map((point, i) => (
+                                                <li key={i} className="flex gap-3 text-sm text-slate-700 leading-relaxed">
+                                                    <span className="text-indigo-500 font-bold text-lg leading-none mt-0.5">•</span>
+                                                    <span>{point}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                    <button
+                                        onClick={() => setSummary(null)}
+                                        className="text-xs text-gray-400 hover:text-gray-600 underline"
+                                    >
+                                        Clear Summary
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="flex flex-col items-center justify-center h-full text-center space-y-4">
+                                    {isSummarizing ? (
+                                        <div className="flex flex-col items-center space-y-3">
+                                            <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+                                            <p className="text-sm text-gray-500 animate-pulse">Analyzing document...</p>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <div className="p-3 bg-indigo-50 rounded-full">
+                                                <Sparkles className="w-6 h-6 text-indigo-600" />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <h3 className="font-medium text-gray-900">AI Assistant</h3>
+                                                <p className="text-sm text-gray-500 max-w-[200px] mx-auto">
+                                                    Get a quick summary of this document to understand key concepts.
+                                                </p>
+                                            </div>
+
+                                            {aiError && (
+                                                <div className="p-3 bg-red-50 text-red-600 text-xs rounded-lg max-w-full break-words">
+                                                    {aiError}
+                                                </div>
+                                            )}
+
+                                            <button
+                                                onClick={handleSummarize}
+                                                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg shadow-sm transition-colors flex items-center gap-2"
+                                            >
+                                                Summarize Document
+                                            </button>
+                                        </>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     </div>
 

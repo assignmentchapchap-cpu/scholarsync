@@ -13,8 +13,8 @@ export async function extractTextFromFile(file: File): Promise<{ content: unknow
         const name = file.name.toLowerCase();
 
         if (type === 'application/pdf') {
-            const content = await extractTextFromPdf(buffer);
-            return content ? { content } : null;
+            const result = await extractTextFromPdf(buffer);
+            return result ? { content: result.text } : null;
         }
 
         if (type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
@@ -35,7 +35,8 @@ export async function extractTextFromFile(file: File): Promise<{ content: unknow
 
 // Kept for backward compatibility if imported elsewhere, but now uses package
 export async function parsePdf(buffer: Buffer): Promise<string | null> {
-    return extractTextFromPdf(buffer);
+    const result = await extractTextFromPdf(buffer);
+    return result ? result.text : null;
 }
 
 export async function parseDocx(buffer: Buffer): Promise<string | null> {

@@ -29,7 +29,7 @@ export async function getAssets(collectionId?: string | null) {
 
         const { data, error } = await query.order('created_at', { ascending: false });
         if (error) {
-            console.error("DB Error:", error);
+            console.error("DB Error:", JSON.stringify(error, null, 2));
             return [];
         }
 

@@ -3,8 +3,7 @@ import mammoth from 'mammoth';
 import JSZip from 'jszip';
 import xml2js from 'xml2js';
 
-// @ts-ignore
-const pdfParse = require('pdf-parse');
+// pdf-parse v2 is imported inside extractTextFromPdf function
 
 export interface ParseResult {
     content: any; // String for simple text, Object for structured data (IMSCC)
@@ -20,9 +19,23 @@ export async function extractTextFromFile(buffer: Buffer, mimeType: string, file
     try {
         const name = fileName.toLowerCase();
 
-        if (mimeType === 'application/pdf') {
-            const content = await extractTextFromPdf(buffer);
-            return content ? { content } : null;
+
+        // Robust PDF Check
+        if (mimeType === 'application/pdf' || name.endsWith('.pdf')) {
+            console.log("DocEngine: Detected PDF, parsing...");
+            const result = await extractTextFromPdf(buffer);
+
+            if (!result) return null; // Parsing failed
+
+            if (result.text.length === 0 && result.numpages > 0) {
+                console.warn(`DocEngine: PDF scanned detection (Pages: ${result.numpages}, Text: 0)`);
+                return {
+                    content: "",
+                    metadata: { isScanned: true, pageCount: result.numpages }
+                };
+            }
+
+            return { content: result.text };
         }
 
         if (mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
@@ -41,10 +54,34 @@ export async function extractTextFromFile(buffer: Buffer, mimeType: string, file
     }
 }
 
-export async function extractTextFromPdf(buffer: Buffer): Promise<string | null> {
+interface PdfExtractResult {
+    text: string;
+    numpages: number;
+}
+
+export async function extractTextFromPdf(buffer: Buffer): Promise<PdfExtractResult | null> {
     try {
-        const data = await (pdfParse as any)(buffer);
-        return data.text ? data.text.trim() : null;
+        console.log(`DocEngine: Starting PDF Parse (v2). Buffer size: ${buffer.length} bytes`);
+
+        // pdf-parse v2 uses class-based API
+        const { PDFParse } = require('pdf-parse');
+        const parser = new PDFParse({ data: buffer });
+
+        // Get document info for page count
+        const info = await parser.getInfo();
+        const textResult = await parser.getText();
+        await parser.destroy();
+
+        console.log("DocEngine: PDF Parse Result:", {
+            numpages: info.total,
+            textLength: textResult.text ? textResult.text.length : 0,
+            hasText: !!textResult.text
+        });
+
+        return {
+            text: textResult.text ? textResult.text.trim() : "",
+            numpages: info.total || 0
+        };
     } catch (e) {
         console.error("PDF Parsing Failed:", e);
         return null;
