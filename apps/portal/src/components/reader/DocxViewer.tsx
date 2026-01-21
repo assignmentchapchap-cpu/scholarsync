@@ -5,9 +5,10 @@ import { renderAsync } from 'docx-preview';
 
 interface DocxViewerProps {
     fileUrl: string;
+    zoomLevel?: number;
 }
 
-export default function DocxViewer({ fileUrl }: DocxViewerProps) {
+export default function DocxViewer({ fileUrl, zoomLevel = 1 }: DocxViewerProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const wrapperRef = useRef<HTMLDivElement>(null);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -33,8 +34,9 @@ export default function DocxViewer({ fileUrl }: DocxViewerProps) {
         // Use the smaller scale:
         // - On desktop: uses maxScale to cap visual width at 612px
         // - On mobile: uses fitScale to fit screen width
-        setScale(Math.min(fitScale, maxScale));
-    }, []);
+        // Then apply zoomLevel
+        setScale(Math.min(fitScale, maxScale) * zoomLevel);
+    }, [zoomLevel]);
 
     // Handle resize
     useEffect(() => {
@@ -213,31 +215,30 @@ export default function DocxViewer({ fileUrl }: DocxViewerProps) {
             {/* Document Container */}
             <div
                 ref={scrollContainerRef}
-                className="flex-1 overflow-y-auto overflow-x-hidden p-4"
+                className="flex-1 overflow-y-auto overflow-x-auto p-4"
                 onScroll={handleScroll}
             >
                 {/* Height spacer - this div has the correct scaled height */}
                 <div
                     ref={wrapperRef}
                     style={{
-                        height: scale < 1 && scaledHeight ? `${scaledHeight}px` : 'auto',
+                        width: `${816 * scale}px`,
+                        height: scaledHeight ? `${scaledHeight}px` : 'auto',
                         position: 'relative',
-                        overflow: 'visible'
+                        overflow: 'hidden',
+                        margin: '0 auto'
                     }}
                 >
                     {/* Scaled content - positioned at top, scales down */}
                     <div
                         ref={containerRef}
-                        className="docx-viewer-wrapper mx-auto"
-                        style={scale < 1 ? {
+                        className="docx-viewer-wrapper"
+                        style={{
                             transform: `scale(${scale})`,
-                            transformOrigin: 'top center',
-                            position: 'absolute',
-                            top: 0,
-                            left: '50%',
-                            marginLeft: `-${816 / 2}px`,
-                            width: '816px'
-                        } : {}}
+                            transformOrigin: 'top left',
+                            width: '816px',
+                            minHeight: '800px'
+                        }}
                     />
                 </div>
             </div>

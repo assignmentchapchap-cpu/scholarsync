@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, FileText, Maximize2, Minimize2, Sparkles, List } from 'lucide-react';
+import { X, FileText, Maximize2, Minimize2, Sparkles, List, ZoomIn, ZoomOut } from 'lucide-react';
 import DocxViewer from './DocxViewer';
 import PdfViewer from './PdfViewer';
 import { Asset } from '@/types/library';
@@ -16,6 +16,12 @@ export default function UniversalReader({ asset, onClose, isOpen = true }: Unive
     const [isMaximized, setIsMaximized] = useState(false);
     const [isOutlineOpen, setIsOutlineOpen] = useState(false);
     const [isAISidebarOpen, setIsAISidebarOpen] = useState(false);
+    const [zoomLevel, setZoomLevel] = useState(1);
+
+    // Zoom handlers
+    const handleZoomIn = () => setZoomLevel(prev => Math.min(prev + 0.1, 2));
+    const handleZoomOut = () => setZoomLevel(prev => Math.max(prev - 0.1, 0.5));
+    const handleZoomReset = () => setZoomLevel(1);
 
     // Toggle outline sidebar (auto-close AI sidebar on desktop)
     const toggleOutline = () => {
@@ -64,6 +70,8 @@ export default function UniversalReader({ asset, onClose, isOpen = true }: Unive
                     </div>
 
                     <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+                        {/* Zoom Controls removed from here */}
+
                         {/* Maximize (hidden on mobile) */}
                         <button
                             onClick={() => setIsMaximized(!isMaximized)}
@@ -119,11 +127,37 @@ export default function UniversalReader({ asset, onClose, isOpen = true }: Unive
                     </div>
 
                     {/* Main Viewer */}
-                    <div className="flex-1 overflow-hidden bg-gray-50 transition-all duration-300">
+                    <div className="flex-1 overflow-hidden bg-gray-50 transition-all duration-300 relative group">
+                        {/* Floating Zoom Controls */}
+                        <div className="absolute top-6 right-6 z-20 flex flex-col bg-white rounded-lg shadow-md border border-gray-100 overflow-hidden">
+                            <button
+                                onClick={handleZoomIn}
+                                disabled={zoomLevel >= 2}
+                                className="p-2 hover:bg-gray-50 text-gray-600 border-b border-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                title="Zoom In"
+                            >
+                                <ZoomIn className="w-5 h-5" />
+                            </button>
+                            <button
+                                onClick={handleZoomReset}
+                                className="p-2 hover:bg-gray-50 text-[10px] font-bold text-gray-500 border-b border-gray-100 transition-colors"
+                                title="Reset Zoom"
+                            >
+                                {Math.round(zoomLevel * 100)}%
+                            </button>
+                            <button
+                                onClick={handleZoomOut}
+                                disabled={zoomLevel <= 0.5}
+                                className="p-2 hover:bg-gray-50 text-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                title="Zoom Out"
+                            >
+                                <ZoomOut className="w-5 h-5" />
+                            </button>
+                        </div>
                         {asset.mime_type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ? (
-                            <DocxViewer fileUrl={asset.file_url || ''} />
+                            <DocxViewer fileUrl={asset.file_url || ''} zoomLevel={zoomLevel} />
                         ) : asset.mime_type === 'application/pdf' ? (
-                            <PdfViewer fileUrl={asset.file_url || ''} />
+                            <PdfViewer fileUrl={asset.file_url || ''} zoomLevel={zoomLevel} />
                         ) : (
                             <div className="h-full overflow-auto p-8 flex justify-center">
                                 <div className="w-full max-w-3xl bg-white shadow-sm min-h-full p-12 rounded-lg">

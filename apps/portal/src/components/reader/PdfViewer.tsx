@@ -10,9 +10,10 @@ pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/b
 
 interface PdfViewerProps {
     fileUrl: string;
+    zoomLevel?: number;
 }
 
-export default function PdfViewer({ fileUrl }: PdfViewerProps) {
+export default function PdfViewer({ fileUrl, zoomLevel = 1 }: PdfViewerProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const [numPages, setNumPages] = useState<number>(0);
@@ -80,7 +81,7 @@ export default function PdfViewer({ fileUrl }: PdfViewerProps) {
     }, []);
 
     // Page width calculation
-    const pageWidth = Math.min(containerWidth, 612);
+    const pageWidth = Math.min(containerWidth, 612) * zoomLevel;
 
     return (
         <div className="flex flex-col h-full bg-gray-100 overflow-hidden relative">
@@ -113,7 +114,7 @@ export default function PdfViewer({ fileUrl }: PdfViewerProps) {
             {/* PDF Document Container */}
             <div
                 ref={scrollContainerRef}
-                className="flex-1 overflow-y-auto overflow-x-hidden p-4"
+                className="flex-1 overflow-y-auto overflow-x-auto p-4"
                 onScroll={handleScroll}
             >
                 <div ref={containerRef} className="mx-auto" style={{ width: pageWidth }}>
