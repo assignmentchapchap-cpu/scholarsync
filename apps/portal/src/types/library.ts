@@ -18,7 +18,7 @@ export interface Asset {
     collection_id: string | null;
     instructor_id: string | null;
     created_at: string;
-    updated_at: string | null;
+    updated_at?: string | null;
 }
 
 export interface Collection {

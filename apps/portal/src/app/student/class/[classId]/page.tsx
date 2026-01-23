@@ -1,9 +1,12 @@
-
 'use client';
 
 import { useEffect, useState, use } from 'react';
 import { createClient } from "@schologic/database";
-import { FileText, Download, ArrowLeft, Calendar, Clock, CheckCircle, AlertCircle, Eye, ArrowUpRight, Users, X, ChevronUp, ChevronDown } from 'lucide-react';
+import {
+    Clock, Calendar, CheckCircle, ArrowLeft, FileText, Download,
+    Link as LinkIcon, Layers, ExternalLink, ChevronRight, AlertCircle, BookOpen, User, PlayCircle, Eye,
+    ChevronUp, ChevronDown, Users, X, ArrowUpRight
+} from 'lucide-react';
 import Link from 'next/link';
 import { Database } from "@schologic/database";
 
@@ -11,7 +14,9 @@ type ClassData = Database['public']['Tables']['classes']['Row'] & {
     instructor_profile?: { full_name: string | null, title?: string | null }
 };
 type Assignment = Database['public']['Tables']['assignments']['Row'];
-type Resource = Database['public']['Tables']['class_resources']['Row'];
+type Resource = Database['public']['Tables']['class_assets']['Row'] & {
+    assets: Database['public']['Tables']['assets']['Row'] | null
+};
 
 type EnrollmentProfile = {
     id: string;
@@ -55,7 +60,7 @@ function StudentClassPage({ classId }: { classId: string }) {
 
             const clsQuery = supabase.from('classes').select('*, profiles:instructor_id(full_name, title)').eq('id', classId).single();
             const assignQuery = supabase.from('assignments').select('*').eq('class_id', classId).order('due_date', { ascending: true });
-            const resQuery = supabase.from('class_resources').select('*').eq('class_id', classId).order('created_at', { ascending: false });
+            const resQuery = supabase.from('class_assets').select('*, assets(*)').eq('class_id', classId).order('created_at', { ascending: false });
             const enrollQuery = supabase.from('enrollments').select(`id, student_id, joined_at, profiles:student_id (full_name, email, avatar_url, registration_number)`).eq('class_id', classId);
             const subQuery = user
                 ? supabase.from('submissions').select('assignment_id, grade').eq('class_id', classId).eq('student_id', user.id)
@@ -76,7 +81,7 @@ function StudentClassPage({ classId }: { classId: string }) {
                 });
             }
             if (assignRes.data) setAssignments(assignRes.data);
-            if (resRes.data) setResources(resRes.data);
+            if (resRes.data) setResources(resRes.data as unknown as Resource[]);
             if (enrollRes.data) setEnrollments(enrollRes.data as unknown as EnrollmentProfile[]);
 
             if (subRes.data) {
@@ -280,31 +285,56 @@ function StudentClassPage({ classId }: { classId: string }) {
 
                     {activeTab === 'resources' && (
                         <div className="grid gap-4">
-                            {resources.map(res => (
-                                <div key={res.id} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 relative group overflow-hidden">
-                                    <div className="absolute top-0 left-0 w-1 h-full bg-amber-400" />
-                                    <div className="flex items-start gap-4">
-                                        <div className="p-3 bg-amber-50 text-amber-600 rounded-xl mt-1">
-                                            <FileText className="w-6 h-6" />
-                                        </div>
-                                        <div className="flex-1">
-                                            <h3 className="font-bold text-lg text-slate-800 mb-1">{res.title}</h3>
-                                            <p className="text-slate-600 text-sm mb-4 whitespace-pre-wrap">{res.content}</p>
+                            {resources.map((item) => {
+                                const res = item.assets; // Access joined asset data
+                                if (!res) return null;
 
-                                            {res.file_url && (
-                                                <a
-                                                    href={res.file_url}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="inline-flex items-center gap-2 text-indigo-600 font-bold text-sm hover:underline"
-                                                >
-                                                    <Download className="w-4 h-4" /> Download / View Attachment
-                                                </a>
-                                            )}
+                                const type = res.asset_type || 'document';
+                                const isLink = type === 'url';
+                                const isCartridge = type === 'cartridge_root';
+
+                                let icon = <FileText className="w-6 h-6" />;
+                                let colorClass = "bg-amber-50 text-amber-600";
+
+                                if (isLink) {
+                                    icon = <LinkIcon className="w-6 h-6" />;
+                                    colorClass = "bg-indigo-50 text-indigo-600";
+                                } else if (isCartridge) {
+                                    icon = <Layers className="w-6 h-6" />;
+                                    colorClass = "bg-orange-50 text-orange-600";
+                                }
+
+                                return (
+                                    <div key={item.id} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 relative group overflow-hidden">
+                                        <div className={`absolute top-0 left-0 w-1 h-full ${isLink ? 'bg-indigo-400' : isCartridge ? 'bg-orange-400' : 'bg-amber-400'}`} />
+                                        <div className="flex items-start gap-4">
+                                            <div className={`p-3 rounded-xl mt-1 ${colorClass}`}>
+                                                {icon}
+                                            </div>
+                                            <div className="flex-1">
+                                                <h3 className="font-bold text-lg text-slate-800 mb-1">{res.title}</h3>
+                                                <p className="text-slate-600 text-sm mb-4 whitespace-pre-wrap">{res.content}</p>
+
+                                                {res.file_url ? (
+                                                    <a
+                                                        href={res.file_url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="inline-flex items-center gap-2 bg-slate-100 text-slate-700 px-4 py-2 rounded-xl text-sm font-bold hover:bg-slate-200 transition-colors"
+                                                    >
+                                                        {isLink ? <ExternalLink className="w-4 h-4" /> : <Download className="w-4 h-4" />}
+                                                        {isLink ? 'Open Link' : 'Download Resource'}
+                                                    </a>
+                                                ) : isCartridge ? (
+                                                    <Link href={`/student/reader/${res.id}`} className="inline-flex items-center gap-2 bg-slate-100 text-slate-700 px-4 py-2 rounded-xl text-sm font-bold hover:bg-slate-200 transition-colors">
+                                                        <BookOpen className="w-4 h-4" /> View Content
+                                                    </Link>
+                                                ) : null}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            ))}
+                                )
+                            })}
                             {resources.length === 0 && (
                                 <div className="text-center py-16 bg-white rounded-2xl border border-dashed border-slate-200">
                                     <AlertCircle className="w-12 h-12 text-amber-100 mx-auto mb-3" />

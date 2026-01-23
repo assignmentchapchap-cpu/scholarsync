@@ -45,8 +45,7 @@ export async function getAssets(collectionId?: string | null) {
             parent_asset_id: row.parent_asset_id,
             collection_id: row.collection_id,
             instructor_id: row.instructor_id,
-            created_at: row.created_at || new Date().toISOString(),
-            updated_at: row.updated_at
+            created_at: row.created_at || new Date().toISOString()
         }));
     } catch (e) {
         console.error("Server Action Error:", e);
@@ -169,7 +168,7 @@ export async function renameAsset(id: string, newTitle: string) {
 
     const { error } = await supabase
         .from('assets')
-        .update({ title: newTitle, updated_at: new Date().toISOString() })
+        .update({ title: newTitle })
         .eq('id', id)
         .eq('instructor_id', user.id); // Security check
 

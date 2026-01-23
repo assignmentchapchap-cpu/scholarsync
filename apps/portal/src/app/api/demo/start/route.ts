@@ -133,16 +133,27 @@ export async function POST(req: Request) {
 
 
         // D. Class Resources (Notes)
-        const resources = DEMO_RESOURCES.map(r => ({
+        const assetInserts = DEMO_RESOURCES.map(r => ({
             id: uuidv4(),
-            class_id: classId,
             title: r.title,
             content: r.content,
-            created_by: userId
+            instructor_id: userId,
+            asset_type: 'document',
+            source: 'manual'
         }));
 
-        const { error: resError } = await supabaseAdmin.from('class_resources').insert(resources);
-        if (resError) console.error("Resource Seed Error (non-fatal):", resError);
+        const { data: insertedAssets, error: assetError } = await supabaseAdmin.from('assets').insert(assetInserts).select();
+
+        if (assetError) {
+            console.error("Asset Seed Error (non-fatal):", assetError);
+        } else if (insertedAssets) {
+            const classAssets = insertedAssets.map(asset => ({
+                class_id: classId,
+                asset_id: asset.id
+            }));
+            const { error: linkError } = await supabaseAdmin.from('class_assets').insert(classAssets);
+            if (linkError) console.error("Class Asset Link Seed Error (non-fatal):", linkError);
+        }
 
         // E. Assignments
         const assign1Id = uuidv4();

@@ -9,7 +9,7 @@ import {
     Users, FileText, Calendar, Settings, Plus, MoreVertical, Trash2,
     ExternalLink, Search, Filter, ArrowLeft, Clock, CheckCircle, Download,
     X, Lock, Unlock, AlertCircle, ChevronRight, Loader2, BookOpen, Edit, Shield, PlayCircle, Copy, Check, ChevronUp, ChevronDown, ArrowUpRight,
-    Eye, EyeOff, Sparkles
+    Eye, EyeOff, Sparkles, FolderOpen, Upload
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -18,12 +18,16 @@ import { MODELS, MODEL_LABELS, ScoringMethod, Granularity } from '@schologic/ai-
 import { isDateBetween, isDateAfter } from '@/lib/date-utils';
 import jsPDF from 'jspdf';
 import AIStatsCard from '@/components/AIStatsCard';
-import AIInsightsModal from '@/components/AIInsightsModal';
 import { ClassSettings, DEFAULT_CLASS_SETTINGS } from '@/types/json-schemas';
+import AssetPickerModal from '@/components/library/AssetPickerModal';
+import AssetUploader from '@/components/library/AssetUploader';
+import AIInsightsModal from '@/components/AIInsightsModal';
 
 type ClassData = Database['public']['Tables']['classes']['Row'] & { settings?: ClassSettings | null };
 type Assignment = Database['public']['Tables']['assignments']['Row'];
-type Resource = Database['public']['Tables']['class_resources']['Row'];
+type Resource = Database['public']['Tables']['class_assets']['Row'] & {
+    assets: Database['public']['Tables']['assets']['Row'] | null
+};
 type Submission = Database['public']['Tables']['submissions']['Row'];
 
 type SubmissionWithProfile = Submission & {
@@ -84,6 +88,11 @@ function ClassDetailsContent({ classId }: { classId: string }) {
     const [isGeneratingRubric, setIsGeneratingRubric] = useState(false);
     const [isCreatingResource, setIsCreatingResource] = useState(false);
     const [newResource, setNewResource] = useState({ title: '', content: '', file_url: '' });
+
+    // Asset Integrations
+    const [showAssetPicker, setShowAssetPicker] = useState(false);
+    const [showUploader, setShowUploader] = useState(false);
+
 
     // Modals State
     // Modals State
@@ -302,7 +311,7 @@ function ClassDetailsContent({ classId }: { classId: string }) {
             const clsQuery = supabase.from('classes').select('*').eq('id', classId).single();
             const assignQuery = supabase.from('assignments').select('*, short_code').eq('class_id', classId).order('due_date', { ascending: true });
             const enrollQuery = supabase.from('enrollments').select(`id, student_id, joined_at, profiles:student_id (full_name, email, avatar_url, registration_number)`).eq('class_id', classId);
-            const resQuery = supabase.from('class_resources').select('*').eq('class_id', classId).order('created_at', { ascending: false });
+            const resQuery = supabase.from('class_assets').select('*, assets(*)').eq('class_id', classId).order('created_at', { ascending: false });
             const profileQuery = supabase.from('profiles').select('settings').eq('id', user.id).single();
             const subQuery = supabase.from('submissions').select('*').eq('class_id', classId);
 
@@ -365,7 +374,7 @@ function ClassDetailsContent({ classId }: { classId: string }) {
             }
 
             if (assignRes.data) setAssignments(assignRes.data);
-            if (resRes.data) setResources(resRes.data);
+            if (resRes.data) setResources(resRes.data as unknown as Resource[]);
             if (enrollRes.data) setEnrollments(enrollRes.data as unknown as EnrollmentProfile[]);
             if (subRes.data) {
                 const submissionsWithProfiles = subRes.data.map((s) => ({ ...s, profiles: null } as SubmissionWithProfile));
@@ -509,24 +518,74 @@ function ClassDetailsContent({ classId }: { classId: string }) {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
 
-            const { data, error } = await supabase.from('class_resources').insert([{
-                class_id: classId,
+            // 1. Create Asset
+            const { data: assetData, error: assetError } = await supabase.from('assets').insert([{
                 title: newResource.title,
                 content: newResource.content,
                 file_url: newResource.file_url,
-                created_by: user.id
+                instructor_id: user.id,
+                asset_type: 'document', // Valid type
+                source: 'manual'
             }]).select().single();
 
-            if (error) throw error;
+            if (assetError) throw assetError;
 
-            setResources([data, ...resources]);
+            // 2. Link to Class
+            const { data: linkData, error: linkError } = await supabase.from('class_assets').insert([{
+                class_id: classId,
+                asset_id: assetData.id
+            }]).select().single();
+
+            if (linkError) throw linkError;
+
+            // Construct new resource object for local state (simulating the join)
+            const newResObj: Resource = {
+                ...linkData,
+                assets: assetData
+            };
+
+            setResources([newResObj, ...resources]);
             setIsCreatingResource(false);
             setNewResource({ title: '', content: '', file_url: '' });
             showToast("Resource Added!", 'success');
-        } catch (err: unknown) {
-            showToast("Error adding resource: " + (err instanceof Error ? err.message : 'Unknown error'), 'error');
+        } catch (err: any) {
+            console.error("Resource Creation Error:", err);
+            const msg = err?.message || (typeof err === 'string' ? err : 'Unknown error');
+            const details = err?.details || err?.hint || '';
+            showToast(`Error adding resource: ${msg} ${details}`, 'error');
         }
     };
+
+    const handleLinkAsset = async (asset: any) => {
+        try {
+            // Check if already linked
+            const exists = resources.find(r => r.asset_id === asset.id);
+            if (exists) {
+                showToast("This asset is already added to this class.", "error");
+                return;
+            }
+
+            const { data: linkData, error: linkError } = await supabase.from('class_assets').insert([{
+                class_id: classId,
+                asset_id: asset.id
+            }]).select().single();
+
+            if (linkError) throw linkError;
+
+            const newResObj: Resource = {
+                ...linkData,
+                assets: asset
+            };
+
+            setResources([newResObj, ...resources]);
+            showToast("Asset linked successfully!", "success");
+            setShowAssetPicker(false);
+        } catch (err: any) {
+            console.error("Link Error", err);
+            showToast("Failed to link asset", "error");
+        }
+    };
+
 
 
     const toggleLock = async () => {
@@ -1339,7 +1398,45 @@ function ClassDetailsContent({ classId }: { classId: string }) {
                                 >
                                     <Plus className="w-3.5 h-3.5 md:w-4 md:h-4" /> Add Note
                                 </button>
+                                <button
+                                    onClick={() => setShowAssetPicker(true)}
+                                    className="flex items-center gap-2 bg-indigo-50 text-indigo-700 px-3 py-2 text-xs md:px-4 md:py-2 md:text-sm rounded-xl font-bold hover:bg-indigo-100 transition-all border border-indigo-200"
+                                >
+                                    <FolderOpen className="w-3.5 h-3.5 md:w-4 md:h-4" /> From Library
+                                </button>
+                                <button
+                                    onClick={() => setShowUploader(true)}
+                                    className="flex items-center gap-2 bg-indigo-50 text-indigo-700 px-3 py-2 text-xs md:px-4 md:py-2 md:text-sm rounded-xl font-bold hover:bg-indigo-100 transition-all border border-indigo-200"
+                                >
+                                    <Upload className="w-3.5 h-3.5 md:w-4 md:h-4" /> Upload File
+                                </button>
                             </div>
+
+                            {/* Modals */}
+                            {showAssetPicker && (
+                                <AssetPickerModal
+                                    onClose={() => setShowAssetPicker(false)}
+                                    onSelect={handleLinkAsset}
+                                />
+                            )}
+
+                            {showUploader && (
+                                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fade-in">
+                                    <div className="bg-white w-full max-w-xl rounded-2xl shadow-xl p-6">
+                                        <div className="flex justify-between items-center mb-4">
+                                            <h3 className="font-bold text-slate-800">Upload File</h3>
+                                            <button onClick={() => setShowUploader(false)}><X className="w-5 h-5 text-slate-400" /></button>
+                                        </div>
+                                        <AssetUploader
+                                            onClose={() => setShowUploader(false)}
+                                            onSuccess={() => {
+                                                // Refresh resources after upload
+                                                setShowUploader(false);
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+                            )}
 
                             {isCreatingResource && (
                                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-amber-100 ring-4 ring-amber-50/50 mb-6">
@@ -1389,22 +1486,27 @@ function ClassDetailsContent({ classId }: { classId: string }) {
                                 </div>
                             ) : (
                                 <div className="grid gap-4">
-                                    {resources.map(res => (
-                                        <div key={res.id} className="bg-white p-5 rounded-xl border border-slate-200 flex justify-between items-center group hover:border-indigo-300 transition-colors">
-                                            <div className="flex items-center gap-4">
-                                                <div className="p-3 bg-amber-50 text-amber-600 rounded-lg">
-                                                    <FileText className="w-6 h-6" />
+                                    {resources.map((item) => {
+                                        const res = item.assets; // Access joined asset
+                                        if (!res) return null;
+
+                                        return (
+                                            <div key={item.id} className="bg-white p-5 rounded-xl border border-slate-200 flex justify-between items-center group hover:border-indigo-300 transition-colors">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="p-3 bg-amber-50 text-amber-600 rounded-lg">
+                                                        <FileText className="w-6 h-6" />
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="font-bold text-slate-800">{res.title}</h3>
+                                                        <p className="text-xs text-slate-500 mt-0.5">Added {new Date(res.created_at ?? '').toLocaleDateString()}</p>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <h3 className="font-bold text-slate-800">{res.title}</h3>
-                                                    <p className="text-xs text-slate-500 mt-0.5">Added {new Date(res.created_at ?? '').toLocaleDateString()}</p>
-                                                </div>
+                                                <button className="p-2 text-slate-400 hover:text-indigo-600 transition-colors">
+                                                    <Download className="w-5 h-5" />
+                                                </button>
                                             </div>
-                                            <button className="p-2 text-slate-400 hover:text-indigo-600 transition-colors">
-                                                <Download className="w-5 h-5" />
-                                            </button>
-                                        </div>
-                                    ))}
+                                        )
+                                    })}
                                 </div>
                             )}
                         </div>
@@ -1996,7 +2098,7 @@ function ClassDetailsContent({ classId }: { classId: string }) {
                     assignments={assignments}
                     submissions={submissions}
                     enrollments={enrollments}
-                    onStudentClick={(studentId, studentName) => {
+                    onStudentClick={(studentId: string, studentName: string) => {
                         setShowAIModal(false);
                         setActiveTab('grades');
                         setGradesSearch(studentName);
@@ -2004,22 +2106,24 @@ function ClassDetailsContent({ classId }: { classId: string }) {
                 />
             </div>
             {/* AI Loading Overlay */}
-            {isGeneratingRubric && (
-                <div className="fixed inset-0 z-[100] bg-slate-900/80 backdrop-blur-sm flex items-center justify-center flex-col animate-in fade-in duration-300">
-                    <div className="bg-white p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center space-y-6">
-                        <div className="relative w-20 h-20 mx-auto">
-                            <div className="absolute inset-0 border-4 border-indigo-100 rounded-full"></div>
-                            <div className="absolute inset-0 border-4 border-indigo-600 rounded-full border-t-transparent animate-spin"></div>
-                            <Sparkles className="absolute inset-0 m-auto w-8 h-8 text-indigo-600 animate-pulse" />
-                        </div>
-                        <div>
-                            <h1 className="text-2xl font-bold">Schologic LMS</h1>
-                            <h3 className="text-xl font-bold text-slate-900 mb-2">Designing Rubric...</h3>
-                            <p className="text-slate-500 text-sm">Our AI is analyzing your assignment details to create a perfect grading criteria.</p>
+            {
+                isGeneratingRubric && (
+                    <div className="fixed inset-0 z-[100] bg-slate-900/80 backdrop-blur-sm flex items-center justify-center flex-col animate-in fade-in duration-300">
+                        <div className="bg-white p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center space-y-6">
+                            <div className="relative w-20 h-20 mx-auto">
+                                <div className="absolute inset-0 border-4 border-indigo-100 rounded-full"></div>
+                                <div className="absolute inset-0 border-4 border-indigo-600 rounded-full border-t-transparent animate-spin"></div>
+                                <Sparkles className="absolute inset-0 m-auto w-8 h-8 text-indigo-600 animate-pulse" />
+                            </div>
+                            <div>
+                                <h1 className="text-2xl font-bold">Schologic LMS</h1>
+                                <h3 className="text-xl font-bold text-slate-900 mb-2">Designing Rubric...</h3>
+                                <p className="text-slate-500 text-sm">Our AI is analyzing your assignment details to create a perfect grading criteria.</p>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 }

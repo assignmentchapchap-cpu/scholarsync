@@ -104,7 +104,7 @@ function DashboardContent() {
 
         // 3. Events
         allEvents.forEach(e => {
-            if (e.title.toLowerCase().includes(query) || e.description?.toLowerCase().includes(query)) {
+            if (e.event_date && (e.title.toLowerCase().includes(query) || e.description?.toLowerCase().includes(query))) {
                 results.push({
                     type: 'event',
                     id: e.id,

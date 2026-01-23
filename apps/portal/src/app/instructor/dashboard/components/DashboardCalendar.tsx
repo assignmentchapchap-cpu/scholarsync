@@ -50,13 +50,13 @@ export default function DashboardCalendar({ assignments, events = [], onEventCre
             }));
 
         const eventItems = events
-            .filter(e => monthFilter(new Date(e.event_date)))
+            .filter(e => e.event_date && monthFilter(new Date(e.event_date)))
             .map(e => ({
                 id: e.id,
                 title: e.title,
-                date: new Date(e.event_date),
+                date: new Date(e.event_date!),
                 type: 'event' as const,
-                time: new Date(e.event_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                time: new Date(e.event_date!).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                 description: e.description
             }));
 
