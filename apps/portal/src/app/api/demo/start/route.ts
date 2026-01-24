@@ -158,6 +158,7 @@ export async function POST(req: Request) {
         // E. Assignments
         const assign1Id = uuidv4();
         const assign2Id = uuidv4();
+        const assign3Id = uuidv4();
 
         const assignments = [
             {
@@ -171,6 +172,12 @@ export async function POST(req: Request) {
                 class_id: classId,
                 ...DEMO_ASSIGNMENTS[1],
                 short_code: DEMO_ASSIGNMENTS[1].short_code
+            },
+            {
+                id: assign3Id,
+                class_id: classId,
+                ...DEMO_ASSIGNMENTS[2],
+                short_code: DEMO_ASSIGNMENTS[2].short_code
             }
         ];
 
@@ -217,6 +224,50 @@ export async function POST(req: Request) {
                 report_data: isGraded ? aiData : null,
                 feedback: isGraded ? "Good overview of trends." : null,
                 created_at: new Date(Date.now() - Math.random() * 5000000).toISOString()
+            });
+        }
+
+        // Quiz Submissions: 3 Students
+        // 1. Perfect Score
+        if (students.length > 0) {
+            submissions.push({
+                student_id: students[0].id,
+                class_id: classId,
+                assignment_id: assign3Id,
+                content: null, // Quiz has no content
+                grade: 20,
+                ai_score: null,
+                report_data: { q1: "Profit", q2: "Problem Recognition", q3: "Market Skimming Pricing", q4: "Age" }, // All correct
+                feedback: null,
+                created_at: new Date(Date.now() - Math.random() * 2000000).toISOString()
+            });
+        }
+        // 2. Good Score (1 wrong)
+        if (students.length > 1) {
+            submissions.push({
+                student_id: students[1].id,
+                class_id: classId,
+                assignment_id: assign3Id,
+                content: null,
+                grade: 15,
+                ai_score: null,
+                report_data: { q1: "Profit", q2: "Information Search", q3: "Market Skimming Pricing", q4: "Age" }, // q2 wrong
+                feedback: null,
+                created_at: new Date(Date.now() - Math.random() * 2000000).toISOString()
+            });
+        }
+        // 3. Average Score (2 wrong)
+        if (students.length > 2) {
+            submissions.push({
+                student_id: students[2].id,
+                class_id: classId,
+                assignment_id: assign3Id,
+                content: null,
+                grade: 10,
+                ai_score: null,
+                report_data: { q1: "Product", q2: "Problem Recognition", q3: "Cost-plus Pricing", q4: "Age" }, // q1, q3 wrong
+                feedback: null,
+                created_at: new Date(Date.now() - Math.random() * 2000000).toISOString()
             });
         }
 

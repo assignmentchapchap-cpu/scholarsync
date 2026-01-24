@@ -63,6 +63,70 @@ export const DEMO_ASSIGNMENTS = [
                 { id: "c3", title: "Writing Quality", weight: 20, max_points: 10, description: "Evaluates the overall structure, paragraph flow, and adherence to academic writing standards." }
             ]
         }
+    },
+    {
+        title: "Marketing Fundamentals Quiz",
+        short_code: "Q1",
+        description: "Test your knowledge of the core concepts covered in the first module. This quiz covers the 4 Ps, consumer behavior, and market segmentation.",
+        max_points: 20,
+        due_date: "2026-01-20T23:59:00Z",
+        assignment_type: "quiz",
+        rubric: {
+            questions: [
+                {
+                    id: "q1",
+                    text: "Which of the following is NOT one of the 4 Ps of Marketing?",
+                    type: "multiple_choice",
+                    points: 5,
+                    options: [
+                        "Product",
+                        "Price",
+                        "Profit",
+                        "Promotion"
+                    ],
+                    correctAnswer: "Profit"
+                },
+                {
+                    id: "q2",
+                    text: "What is the first stage of the Consumer Decision Making Process?",
+                    type: "multiple_choice",
+                    points: 5,
+                    options: [
+                        "Information Search",
+                        "Problem Recognition",
+                        "Purchase Decision",
+                        "Post-purchase Evaluation"
+                    ],
+                    correctAnswer: "Problem Recognition"
+                },
+                {
+                    id: "q3",
+                    text: "Which pricing strategy involves setting a high price for a new product to skim revenues layer by layer?",
+                    type: "multiple_choice",
+                    points: 5,
+                    options: [
+                        "Market Penetration Pricing",
+                        "Market Skimming Pricing",
+                        "Cost-plus Pricing",
+                        "Competitive Pricing"
+                    ],
+                    correctAnswer: "Market Skimming Pricing"
+                },
+                {
+                    id: "q4",
+                    text: "Which of these is a demographic segmentation variable?",
+                    type: "multiple_choice",
+                    points: 5,
+                    options: [
+                        "Lifestyle",
+                        "Personality",
+                        "Age",
+                        "Usage Rate"
+                    ],
+                    correctAnswer: "Age"
+                }
+            ]
+        }
     }
 ];
 

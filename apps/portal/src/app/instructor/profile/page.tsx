@@ -88,7 +88,7 @@ export default function InstructorProfilePage() {
                     preferences: null,
                     registration_number: null,
                     settings: null,
-                    created_at: new Date().toISOString()
+
                 });
 
                 // Populate form from metadata if available
