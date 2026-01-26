@@ -121,6 +121,7 @@ export async function claimDemoAccount(password: string) {
     <p>This message was sent to confirm your identity on Schologic.com. If you did not sign up for an account, please ignore this email.</p>
      <!-- Institutional Footer -->
   <div style="margin-top: 60px; padding-top: 20px; border-top: 1px solid #f1f5f9; font-size: 11px; color: #cbd5e1; text-align: center;">
+    <p style="margin-bottom: 4px;">This is an automated email. Please reply to <a href="mailto:info@schologic.com" style="color: inherit;">info@schologic.com</a></p>
     <p style="margin-bottom: 4px;">Sent by Schologic LMS</p>
     <p style="margin-bottom: 4px;">For Queries Contact +254 108289977</p>
     <p style="margin-bottom: 4px;">Mang'u Road, Nairobi, Kenya</p>
@@ -204,6 +205,7 @@ export async function sendDemoRecoveryEmail(email: string) {
     <p>If you did not request this link, you can safely ignore this email.</p>
     
     <div style="margin-top: 60px; padding-top: 20px; border-top: 1px solid #f1f5f9; font-size: 11px; color: #cbd5e1; text-align: center;">
+        <p style="margin-bottom: 4px;">This is an automated email. Please reply to <a href="mailto:info@schologic.com" style="color: inherit;">info@schologic.com</a></p>
         <p style="margin-bottom: 4px;">Sent by Schologic LMS</p>
         <p>Security ID: ${user.id.split('-')[0].toUpperCase()}</p>
     </div>
