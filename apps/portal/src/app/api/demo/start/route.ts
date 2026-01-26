@@ -40,9 +40,15 @@ export async function POST(req: Request) {
 
         if (userError || !userData.user) {
             console.error("Demo User Create Error:", userError);
-            const status = userError?.code === 'unique_violation' || userError?.message?.includes('already registered') ? 409 : 500;
+            // Check for various duplicate user error indicators
+            const isDuplicate =
+                userError?.code === 'unique_violation' ||
+                userError?.status === 422 || // Supabase often returns 422 for existing users
+                (userError?.message && /already registered|exists/i.test(userError.message));
+
+            const status = isDuplicate ? 409 : 500;
             const message = status === 409 ? 'This email is already registered.' : 'Failed to create demo user';
-            return NextResponse.json({ error: message, code: userError?.code }, { status });
+            return NextResponse.json({ error: message, code: userError?.code, details: userError }, { status });
         }
 
         const userId = userData.user.id;

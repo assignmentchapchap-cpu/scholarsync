@@ -65,8 +65,10 @@ export default function DemoSignupModal({ onClose }: DemoSignupModalProps) {
             if (!res.ok) {
                 console.error("Demo Signup Error Status:", res.status);
                 console.error("Demo Signup Error Data:", data);
-                if (res.status === 409) {
-                    console.log("Status is 409, switching to exists step");
+
+                // Enhanced check for existing user
+                if (res.status === 409 || res.status === 422 || data?.error?.toLowerCase().includes('already registered')) {
+                    console.log("User exists (detected via status/message), switching to exists step");
                     setStep('exists');
                     setLoading(false);
                     return;
