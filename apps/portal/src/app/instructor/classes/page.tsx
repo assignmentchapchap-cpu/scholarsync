@@ -132,9 +132,9 @@ function ClassesContent() {
             setErrors({});
             setCreating(false);
             showToast('Class Created Successfully!', 'success');
-        } catch (error: unknown) {
+        } catch (error: any) {
             console.error('Error creating class:', error);
-            const message = error instanceof Error ? error.message : 'Failed to create class.';
+            const message = error?.message || 'Failed to create class.';
             showToast(message, 'error');
         } finally {
             setIsSubmitting(false);
