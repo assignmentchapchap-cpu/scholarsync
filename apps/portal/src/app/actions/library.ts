@@ -57,12 +57,12 @@ export async function uploadFileAsset(formData: FormData, collectionId?: string)
     const file = formData.get('file') as File;
     const title = formData.get('title') as string;
 
-    if (!file) throw new Error('No file provided');
+    if (!file) return { error: 'No file provided' };
 
     const cookieStore = await cookies();
     const supabase = createSessionClient(cookieStore);
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Unauthorized');
+    if (!user) return { error: 'Unauthorized' };
 
     // Demo Limit Check (Max 3 Files)
     if (user.user_metadata?.is_demo) {
@@ -71,15 +71,11 @@ export async function uploadFileAsset(formData: FormData, collectionId?: string)
             .select('*', { count: 'exact', head: true })
             .eq('instructor_id', user.id);
 
+        // The user specifically requested this exact message
         if (!countErr && (count || 0) >= 3) {
-            throw new Error("Demo Limit: You can only upload up to 3 files.");
+            return { error: "You have exceeded the maximum allowed uploads in demo account. Upgrade to continue." };
         }
     }
-
-    // 1. Upload to Blob (Safe)
-    // Check quota before upload if possible (approximate, since we don't have file size in args yet easily without extra call, 
-    // but we can check AFTER blob upload or pass size as argument. 
-    // Better: Helper function to check quota first.
 
     // Quota Check (20MB Limit for Instructor)
     const { data: assets, error: quotaErr } = await supabase
@@ -92,118 +88,149 @@ export async function uploadFileAsset(formData: FormData, collectionId?: string)
         const typedAssets = assets as unknown as { size_bytes: number | null }[];
         const totalSize = typedAssets.reduce((acc, curr) => acc + (curr.size_bytes || 0), 0);
         if (totalSize + file.size > 20 * 1024 * 1024) {
-            throw new Error(`Storage quota exceeded. You have used ${(totalSize / 1024 / 1024).toFixed(2)}MB of 20MB.`);
+            return { error: `Storage quota exceeded. You have used ${(totalSize / 1024 / 1024).toFixed(2)}MB of 20MB.` };
         }
     }
-
-    const blob = await put(file.name, file, { access: 'public', addRandomSuffix: true, token: process.env.BLOB_READ_WRITE_TOKEN });
-
-    // 2. Extract Text via Doc Engine
-    let extractedContent = null;
-    let extractedTitle: string | undefined = undefined;
 
     try {
-        const buffer = Buffer.from(await file.arrayBuffer());
-        const result: ParseResult | null = await extractTextFromFile(buffer, file.type, file.name);
+        const blob = await put(file.name, file, { access: 'public', addRandomSuffix: true, token: process.env.BLOB_READ_WRITE_TOKEN });
 
-        if (result) {
-            extractedContent = result.content;
-            extractedTitle = result.title;
+        // 2. Extract Text via Doc Engine
+        let extractedContent = null;
+        let extractedTitle: string | undefined = undefined;
+
+        try {
+            const buffer = Buffer.from(await file.arrayBuffer());
+            const result: ParseResult | null = await extractTextFromFile(buffer, file.type, file.name);
+
+            if (result) {
+                extractedContent = result.content;
+                extractedTitle = result.title;
+            }
+        } catch (e) {
+            console.warn("Text extraction skipped/failed:", e);
         }
-    } catch (e) {
-        console.warn("Text extraction skipped/failed:", e);
+
+        // 3. Insert to DB
+        let assetType: AssetType = 'file';
+        if (file.name.toLowerCase().endsWith('.imscc')) {
+            assetType = 'cartridge_root';
+        } else if (file.type === 'application/pdf' || file.type.includes('word')) {
+            assetType = 'document';
+        }
+
+        // Smart Title Logic
+        const finalTitle = (title === file.name && extractedTitle) ? extractedTitle : (title || extractedTitle || file.name);
+
+        const { error } = await supabase.from('assets').insert({
+            title: finalTitle,
+            file_url: blob.url,
+            content: extractedContent,
+            asset_type: assetType,
+            mime_type: file.type,
+            source: 'upload',
+            collection_id: collectionId || null,
+            instructor_id: user.id,
+            size_bytes: file.size
+        });
+
+        if (error) {
+            console.error("DB Insert Error:", error);
+            return { error: "Failed to save file metadata." };
+        }
+
+    } catch (error: any) {
+        console.error("Upload Error:", error);
+        return { error: error.message || "Failed to upload file." };
     }
 
-    // 3. Insert to DB
-    let assetType: AssetType = 'file';
-    if (file.name.toLowerCase().endsWith('.imscc')) {
-        assetType = 'cartridge_root';
-    } else if (file.type === 'application/pdf' || file.type.includes('word')) {
-        assetType = 'document';
-    }
-
-    // Smart Title Logic
-    const finalTitle = (title === file.name && extractedTitle) ? extractedTitle : (title || extractedTitle || file.name);
-
-    const { error } = await supabase.from('assets').insert({
-        title: finalTitle,
-        file_url: blob.url,
-        content: extractedContent,
-        asset_type: assetType,
-        mime_type: file.type,
-        source: 'upload',
-        collection_id: collectionId || null,
-        instructor_id: user.id,
-        size_bytes: file.size
-    });
-
-    if (error) throw error;
     revalidatePath('/instructor/library');
+    return { success: true };
 }
 
 export async function createManualAsset(title: string, content: AssetContent | string, collectionId?: string) {
-    const cookieStore = await cookies();
-    const supabase = createSessionClient(cookieStore);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Unauthorized');
+    try {
+        const cookieStore = await cookies();
+        const supabase = createSessionClient(cookieStore);
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return { error: 'Unauthorized' };
 
-    const { error } = await supabase.from('assets').insert({
-        title,
-        content: content as unknown as Database['public']['Tables']['assets']['Row']['content'],
-        asset_type: 'document',
-        source: 'manual',
-        collection_id: collectionId || null,
-        instructor_id: user.id
-    });
+        const { error } = await supabase.from('assets').insert({
+            title,
+            content: content as unknown as Database['public']['Tables']['assets']['Row']['content'],
+            asset_type: 'document',
+            source: 'manual',
+            collection_id: collectionId || null,
+            instructor_id: user.id
+        });
 
-    if (error) throw error;
-    revalidatePath('/instructor/library');
+        if (error) throw error;
+        revalidatePath('/instructor/library');
+        return { success: true };
+    } catch (error: any) {
+        return { error: error.message || 'Failed to create asset' };
+    }
 }
 
 export async function deleteAssets(ids: string[]) {
-    const cookieStore = await cookies();
-    const supabase = createSessionClient(cookieStore);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Unauthorized');
+    try {
+        const cookieStore = await cookies();
+        const supabase = createSessionClient(cookieStore);
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return { error: 'Unauthorized' };
 
-    const { error } = await supabase
-        .from('assets')
-        .delete()
-        .in('id', ids)
-        .eq('instructor_id', user.id); // Security check
+        const { error } = await supabase
+            .from('assets')
+            .delete()
+            .in('id', ids)
+            .eq('instructor_id', user.id); // Security check
 
-    if (error) throw error;
-    revalidatePath('/instructor/library');
+        if (error) throw error;
+        revalidatePath('/instructor/library');
+        return { success: true };
+    } catch (error: any) {
+        return { error: error.message || 'Failed to delete assets' };
+    }
 }
 
 export async function deleteAsset(id: string) {
-    const cookieStore = await cookies();
-    const supabase = createSessionClient(cookieStore);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Unauthorized');
+    try {
+        const cookieStore = await cookies();
+        const supabase = createSessionClient(cookieStore);
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return { error: 'Unauthorized' };
 
-    const { error } = await supabase
-        .from('assets')
-        .delete()
-        .eq('id', id)
-        .eq('instructor_id', user.id); // Security check
+        const { error } = await supabase
+            .from('assets')
+            .delete()
+            .eq('id', id)
+            .eq('instructor_id', user.id); // Security check
 
-    if (error) throw error;
-    revalidatePath('/instructor/library');
+        if (error) throw error;
+        revalidatePath('/instructor/library');
+        return { success: true };
+    } catch (error: any) {
+        return { error: error.message || 'Failed to delete asset' };
+    }
 }
 
 export async function renameAsset(id: string, newTitle: string) {
-    const cookieStore = await cookies();
-    const supabase = createSessionClient(cookieStore);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Unauthorized');
+    try {
+        const cookieStore = await cookies();
+        const supabase = createSessionClient(cookieStore);
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return { error: 'Unauthorized' };
 
-    const { error } = await supabase
-        .from('assets')
-        .update({ title: newTitle })
-        .eq('id', id)
-        .eq('instructor_id', user.id); // Security check
+        const { error } = await supabase
+            .from('assets')
+            .update({ title: newTitle })
+            .eq('id', id)
+            .eq('instructor_id', user.id); // Security check
 
-    if (error) throw error;
-    revalidatePath('/instructor/library');
+        if (error) throw error;
+        revalidatePath('/instructor/library');
+        return { success: true };
+    } catch (error: any) {
+        return { error: error.message || 'Failed to rename asset' };
+    }
 }

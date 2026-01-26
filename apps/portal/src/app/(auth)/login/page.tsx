@@ -72,12 +72,18 @@ function LoginContent() {
                 setSuccessMsg('Account created! Please check your email to confirm your account.');
             } else {
                 // Sign In Flow
-                const { error: signInError } = await supabase.auth.signInWithPassword({
+                const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
                     email,
                     password,
                 });
 
                 if (signInError) throw signInError;
+
+                // Security Check: Enforce email verification
+                if (signInData.user && !signInData.user.email_confirmed_at) {
+                    await supabase.auth.signOut();
+                    throw new Error('Please verify your email address to log in.');
+                }
 
                 // Success
                 router.push('/instructor/dashboard');

@@ -18,10 +18,24 @@ export default function DemoBanner() {
             const { data: { user } } = await supabase.auth.getUser();
             if (user && (user.email?.toLowerCase().endsWith('@schologic.demo') || user.user_metadata?.is_demo)) {
                 setIsDemo(true);
+            } else {
+                setIsDemo(false);
             }
             setLoading(false);
         };
+
+        const supabase = createClient();
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'USER_UPDATED') {
+                checkUser();
+            }
+        });
+
         checkUser();
+
+        return () => {
+            subscription.unsubscribe();
+        };
     }, []);
 
     const showBanner = pathname?.startsWith('/instructor') || pathname?.startsWith('/student');

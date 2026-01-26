@@ -41,7 +41,10 @@ export default function AssetUploader({ onClose, onSuccess }: AssetUploaderProps
         formData.append('title', file.name); // Default title to filename
 
         try {
-            await uploadFileAsset(formData);
+            const res = await uploadFileAsset(formData);
+            if (res && res.error) {
+                throw new Error(res.error);
+            }
             showToast('File uploaded successfully', 'success');
             onSuccess();
         } catch (err: unknown) {

@@ -82,29 +82,37 @@ export default function LibraryView({ initialAssets }: LibraryViewProps) {
     const executeRename = async () => {
         if (!assetToRename || !newTitle.trim()) return;
         try {
-            await renameAsset(assetToRename.id, newTitle);
+            const res = await renameAsset(assetToRename.id, newTitle);
+            if (res && res.error) {
+                showToast(res.error, 'error');
+                return;
+            }
             setAssets(prev => prev.map(a => a.id === assetToRename.id ? { ...a, title: newTitle } : a));
             showToast('Asset renamed', 'success');
             setAssetToRename(null);
-        } catch (e) {
-            showToast('Failed to rename asset', 'error');
+        } catch (e: any) {
+            showToast(e.message || 'Failed to rename asset', 'error');
         }
     };
 
     const executeDelete = async () => {
         try {
             if (assetToDelete === 'BULK_DELETE_FLAG') {
-                await deleteAssets(Array.from(selectedIds));
+                const res = await deleteAssets(Array.from(selectedIds));
+                if (res && res.error) throw new Error(res.error);
+
                 setAssets(prev => prev.filter(a => !selectedIds.has(a.id)));
                 setSelectedIds(new Set());
                 showToast(`${selectedIds.size} assets deleted`, 'success');
             } else if (assetToDelete) {
-                await deleteAsset(assetToDelete);
+                const res = await deleteAsset(assetToDelete);
+                if (res && res.error) throw new Error(res.error);
+
                 setAssets(prev => prev.filter(a => a.id !== assetToDelete));
                 showToast('Asset deleted', 'success');
             }
-        } catch (e: unknown) {
-            showToast('Failed to delete asset(s)', 'error');
+        } catch (e: any) {
+            showToast(e.message || 'Failed to delete asset(s)', 'error');
         } finally {
             setAssetToDelete(null);
         }
