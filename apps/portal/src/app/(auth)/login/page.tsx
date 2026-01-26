@@ -129,7 +129,7 @@ function LoginContent() {
                                     type="text"
                                     placeholder="First Name"
                                     value={firstName}
-                                    onChange={(e) => setFirstName(e.target.value)}
+                                    onChange={(e) => setFirstName(e.target.value.replace(/(^\w|\s\w)/g, m => m.toUpperCase()))}
                                     className="w-1/2 p-3 border rounded-lg bg-slate-50 focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none transition-all"
                                     required={isSignUp}
                                 />
@@ -137,7 +137,7 @@ function LoginContent() {
                                     type="text"
                                     placeholder="Last Name"
                                     value={lastName}
-                                    onChange={(e) => setLastName(e.target.value)}
+                                    onChange={(e) => setLastName(e.target.value.replace(/(^\w|\s\w)/g, m => m.toUpperCase()))}
                                     className="w-1/2 p-3 border rounded-lg bg-slate-50 focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none transition-all"
                                     required={isSignUp}
                                 />

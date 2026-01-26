@@ -190,7 +190,10 @@ export default function StudentLoginPage() {
                             <div>
                                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Full Name</label>
                                 <input
-                                    value={studentName} onChange={e => setStudentName(e.target.value)}
+                                    value={studentName} onChange={e => {
+                                        const val = e.target.value.replace(/(^\w|\s\w)/g, m => m.toUpperCase());
+                                        setStudentName(val);
+                                    }}
                                     className="w-full p-4 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
                                     placeholder="John Doe"
                                     required

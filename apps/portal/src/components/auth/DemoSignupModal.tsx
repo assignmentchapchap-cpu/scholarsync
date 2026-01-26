@@ -219,7 +219,7 @@ export default function DemoSignupModal({ onClose }: DemoSignupModalProps) {
                                             type="text"
                                             required
                                             value={formData.firstName}
-                                            onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                                            onChange={(e) => setFormData({ ...formData, firstName: e.target.value.replace(/(^\w|\s\w)/g, m => m.toUpperCase()) })}
                                             placeholder="Jane"
                                             className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-medium transition-all hover:border-slate-300"
                                         />
@@ -233,7 +233,7 @@ export default function DemoSignupModal({ onClose }: DemoSignupModalProps) {
                                             type="text"
                                             required
                                             value={formData.lastName}
-                                            onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                                            onChange={(e) => setFormData({ ...formData, lastName: e.target.value.replace(/(^\w|\s\w)/g, m => m.toUpperCase()) })}
                                             placeholder="Doe"
                                             className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-medium transition-all hover:border-slate-300"
                                         />
