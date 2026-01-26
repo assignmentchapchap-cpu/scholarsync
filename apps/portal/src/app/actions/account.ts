@@ -1,7 +1,7 @@
 'use server';
 
 import { createClient } from '@supabase/supabase-js';
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { createSessionClient } from '@schologic/database';
 
 // Admin client for privileged operations (wiping data, updating auth flags)
@@ -18,6 +18,8 @@ const supabaseAdmin = createClient(
 
 export async function claimDemoAccount(password: string) {
     const cookieStore = await cookies();
+    const headerStore = await headers();
+    const origin = headerStore.get('origin') || process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
     const supabase = createSessionClient(cookieStore);
 
     // 1. Verify Current User
@@ -70,7 +72,10 @@ export async function claimDemoAccount(password: string) {
         // 4. Trigger Verification Email
         const { error: emailError } = await supabaseAdmin.auth.resend({
             type: 'signup',
-            email: email
+            email: email,
+            options: {
+                emailRedirectTo: `${origin}/auth/callback`
+            }
         });
 
         if (emailError) {

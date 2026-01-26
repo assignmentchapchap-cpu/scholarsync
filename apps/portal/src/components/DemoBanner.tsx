@@ -16,7 +16,7 @@ export default function DemoBanner() {
         const checkUser = async () => {
             const supabase = createClient();
             const { data: { user } } = await supabase.auth.getUser();
-            if (user && user.email?.toLowerCase().endsWith('@schologic.demo')) {
+            if (user && (user.email?.toLowerCase().endsWith('@schologic.demo') || user.user_metadata?.is_demo)) {
                 setIsDemo(true);
             }
             setLoading(false);
