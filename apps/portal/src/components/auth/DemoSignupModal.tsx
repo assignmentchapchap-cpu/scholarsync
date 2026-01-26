@@ -6,6 +6,7 @@ import { X, Loader2, Sparkles, User, School } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { createClient } from "@schologic/database";
 import { useToast } from '@/context/ToastContext';
+import { sendDemoRecoveryEmail } from '@/app/actions/account';
 
 interface DemoSignupModalProps {
     onClose: () => void;
@@ -114,10 +115,8 @@ export default function DemoSignupModal({ onClose }: DemoSignupModalProps) {
     const handleRecovery = async () => {
         setLoading(true);
         try {
-            const { error } = await supabase.auth.resetPasswordForEmail(formData.email, {
-                redirectTo: `${window.location.origin}/auth/callback?next=/instructor/dashboard`,
-            });
-            if (error) throw error;
+            const { error } = await sendDemoRecoveryEmail(formData.email);
+            if (error) throw new Error(error);
             showToast('Login link sent! Check your email.', 'success');
             onClose();
         } catch (err: any) {

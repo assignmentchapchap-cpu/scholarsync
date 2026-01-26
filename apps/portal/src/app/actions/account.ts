@@ -83,8 +83,8 @@ export async function claimDemoAccount(password: string) {
         });
 
         if (linkError || !linkData?.properties?.action_link) {
-            console.error("Link Gen Error:", linkError);
-            throw new Error("Failed to generate verification link.");
+            console.error("Link Gen Error:", JSON.stringify(linkError, null, 2));
+            throw new Error(`Failed to generate verification link: ${linkError?.message || 'Unknown error'}`);
         }
 
         const actionLink = linkData.properties.action_link;
@@ -140,5 +140,83 @@ export async function claimDemoAccount(password: string) {
     } catch (error: any) {
         console.error("Claim Account Error:", error);
         return { error: error.message || 'Failed to claim account.' };
+    }
+}
+
+export async function sendDemoRecoveryEmail(email: string) {
+    const headerStore = await headers();
+    const origin = headerStore.get('origin') || process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+
+    try {
+        // 1. Get User ID (Service Role)
+        const { data: { users }, error: userError } = await supabaseAdmin.auth.admin.listUsers();
+        if (userError) throw userError;
+
+        const user = users.find(u => u.email?.toLowerCase() === email.toLowerCase());
+        if (!user) {
+            return { error: 'User not found' };
+        }
+
+        // 2. Generate Magic Link
+        const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+            type: 'magiclink',
+            email: email,
+            options: {
+                redirectTo: `${origin}/instructor/dashboard`
+            }
+        });
+
+        if (linkError || !linkData?.properties?.action_link) {
+            console.error("Recovery Link Gen Error:", JSON.stringify(linkError, null, 2));
+            throw new Error("Failed to generate login link");
+        }
+
+        const actionLink = linkData.properties.action_link;
+
+        // 3. Send Email via Resend
+        const { error: resendError } = await resend.emails.send({
+            from: 'Schologic <onboarding@schologic.com>',
+            to: email,
+            subject: 'Log in to Schologic',
+            html: `
+<div style="font-family: ui-sans-serif, system-ui, sans-serif; max-width: 550px; margin: 0 auto; line-height: 1.5; color: #334155;">
+  <p style="font-size: 12px; color: #94a3b8; margin-bottom: 25px; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px;">
+    SCHOLOGIC PORTAL SYSTEM // SECURITY_SERVICE
+  </p>
+
+  <p>Hello,</p>
+  
+  <p>We received a request to log in to your <strong>Schologic</strong> account.</p>
+
+  <div style="margin: 30px 0;">
+    <a href="${actionLink}" style="background-color: #0f172a; color: #ffffff; padding: 12px 20px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 15px;">
+      Log In Now
+    </a>
+  </div>
+
+  <p style="font-size: 13px; color: #64748b;">
+    Or paste this URL into your browser:<br>
+    <a href="${actionLink}" style="color: #6366f1; word-break: break-all;">${actionLink}</a>
+  </p>
+
+  <div style="margin-top: 50px; padding-top: 20px; border-top: 1px solid #f1f5f9; font-size: 11px; color: #94a3b8;">
+    <p>If you did not request this link, you can safely ignore this email.</p>
+    
+    <div style="margin-top: 60px; padding-top: 20px; border-top: 1px solid #f1f5f9; font-size: 11px; color: #cbd5e1; text-align: center;">
+        <p style="margin-bottom: 4px;">Sent by Schologic LMS</p>
+        <p>Security ID: ${user.id.split('-')[0].toUpperCase()}</p>
+    </div>
+  </div>
+</div>
+            `
+        });
+
+        if (resendError) throw new Error("Failed to send email");
+
+        return { success: true };
+
+    } catch (error: any) {
+        console.error("Recovery Error:", error);
+        return { error: error.message || 'Failed to send login link' };
     }
 }
