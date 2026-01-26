@@ -4,8 +4,9 @@
 import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from "@schologic/database";
-import { AlertCircle, ArrowRight, Loader2 } from 'lucide-react';
+import { ArrowRight, Loader2 } from 'lucide-react';
 import DemoSignupModal from '@/components/auth/DemoSignupModal';
+import Alert from '@/components/Alert';
 
 function LoginContent() {
     const router = useRouter();
@@ -107,19 +108,9 @@ function LoginContent() {
                     {getTitle()}
                 </h2>
 
-                {error && (
-                    <div className="mb-4 p-3 bg-red-100 text-red-700 rounded flex items-center gap-2 text-sm text-left">
-                        <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                        {error}
-                    </div>
-                )}
+                {error && <Alert type="error" message={error} />}
 
-                {successMsg && (
-                    <div className="mb-4 p-3 bg-green-100 text-green-700 rounded flex items-center gap-2 text-sm text-left">
-                        <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                        {successMsg}
-                    </div>
-                )}
+                {successMsg && <Alert type="success" message={successMsg} />}
 
                 <div className="space-y-4">
                     <form onSubmit={handleEmailAuth} className="space-y-4">

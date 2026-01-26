@@ -91,7 +91,7 @@ export async function claimDemoAccount(password: string) {
     const actionLink = linkData.properties.action_link;
 
     const { error: resendError } = await resend.emails.send({
-      from: 'Schologic <onboarding@schologic.com>', // Update this domain if needed
+      from: 'Schologic Team <onboarding@schologic.com>', // Update this domain if needed
       to: email,
       subject: 'Verify your Schologic Account',
       html: `
@@ -176,7 +176,7 @@ export async function sendDemoRecoveryEmail(email: string) {
 
     // 3. Send Email via Resend
     const { error: resendError } = await resend.emails.send({
-      from: 'Schologic <onboarding@schologic.com>',
+      from: 'Schologic Team <onboarding@schologic.com>',
       to: email,
       subject: 'Log in to Schologic',
       html: `
