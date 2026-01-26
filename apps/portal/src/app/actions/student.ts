@@ -44,8 +44,25 @@ export async function verifyClassInvite(code: string) {
     }
 }
 
-export async function enrollStudent(studentId: string, classId: string) {
+export async function enrollStudent(studentId: string, classId: string, fullName: string, regNumber: string) {
     try {
+        // 1. Ensure Profile Exists (Upsert)
+        // This prevents race conditions where the trigger hasn't fired yet or client update failed
+        const { error: profileError } = await supabaseAdmin
+            .from('profiles')
+            .upsert({
+                id: studentId,
+                full_name: fullName,
+                registration_number: regNumber,
+                role: 'student'
+            });
+
+        if (profileError) {
+            console.error("Profile Upsert Error:", profileError);
+            return { error: 'Failed to initialize student profile' };
+        }
+
+        // 2. Enroll
         const { error } = await supabaseAdmin
             .from('enrollments')
             .insert([{

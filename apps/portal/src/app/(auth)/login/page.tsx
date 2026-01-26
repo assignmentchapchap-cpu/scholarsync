@@ -49,15 +49,18 @@ function LoginContent() {
 
             if (isSignUp) {
                 // Sign Up Flow
+                const capFirst = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
+                const capLast = lastName.charAt(0).toUpperCase() + lastName.slice(1).toLowerCase();
+
                 const { data, error: signUpError } = await supabase.auth.signUp({
                     email,
                     password,
                     options: {
                         emailRedirectTo: `${window.location.origin}/auth/callback`,
                         data: {
-                            first_name: firstName,
-                            last_name: lastName,
-                            full_name: `${firstName} ${lastName}`.trim(),
+                            first_name: capFirst,
+                            last_name: capLast,
+                            full_name: `${capFirst} ${capLast}`.trim(),
                             role: 'instructor'
                         }
                     }

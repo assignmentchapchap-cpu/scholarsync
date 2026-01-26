@@ -41,10 +41,17 @@ export default function DemoSignupModal({ onClose }: DemoSignupModalProps) {
 
         try {
             // 1. Create Demo Account via API
+            // Capitalize names
+            const payload = {
+                ...formData,
+                firstName: formData.firstName.charAt(0).toUpperCase() + formData.firstName.slice(1).toLowerCase(),
+                lastName: formData.lastName.charAt(0).toUpperCase() + formData.lastName.slice(1).toLowerCase()
+            };
+
             const res = await fetch('/api/demo/start', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData)
+                body: JSON.stringify(payload)
             });
 
             const rawText = await res.text();

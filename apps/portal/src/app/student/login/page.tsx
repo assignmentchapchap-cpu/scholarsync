@@ -48,6 +48,13 @@ export default function StudentLoginPage() {
                 if (!verifyRes.success || !verifyRes.classId) throw new Error("Invalid class invite code");
 
                 // 2. Create Auth User
+
+                // Capitalize Name
+                const formattedName = studentName
+                    .split(' ')
+                    .map(part => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+                    .join(' ');
+
                 const { data: authData, error: authErr } = await supabase.auth.signUp({
                     email,
                     password,
@@ -55,7 +62,7 @@ export default function StudentLoginPage() {
                         emailRedirectTo: `${window.location.origin}/auth/callback?next=/student/dashboard`,
                         data: {
                             role: 'student',
-                            full_name: studentName,
+                            full_name: formattedName,
                             registration_number: regNumber, // Pass here for trigger to handle
                         }
                     }
@@ -77,7 +84,7 @@ export default function StudentLoginPage() {
                 // But we attempt update just in case we HAVE a session (e.g. auto confirm).
                 if (authData.session) {
                     await supabase.from('profiles').update({
-                        full_name: studentName,
+                        full_name: formattedName,
                         registration_number: regNumber,
                         role: 'student'
                     }).eq('id', authData.user.id);
@@ -85,7 +92,7 @@ export default function StudentLoginPage() {
 
                 // 4. Create Enrollment via Server Action
                 // This uses the service role to insert even if the user is not yet confirmed/authenticated
-                const enrollRes = await enrollStudent(authData.user.id, verifyRes.classId);
+                const enrollRes = await enrollStudent(authData.user.id, verifyRes.classId, formattedName, regNumber);
 
                 if (enrollRes.error && enrollRes.error !== 'Already enrolled') {
                     console.error("Enrollment Error:", enrollRes.error);
