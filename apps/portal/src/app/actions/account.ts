@@ -197,18 +197,18 @@ export async function sendDemoRecoveryEmail(email: string) {
       return { error: 'User not found' };
     }
 
-    // 2. Generate Magic Link
+    // 2. Generate Recovery Link (Password Reset)
     const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
-      type: 'magiclink',
+      type: 'recovery',
       email: email,
       options: {
-        redirectTo: `${origin}/auth/callback`
+        redirectTo: `${origin}/auth/callback?next=/instructor/settings`
       }
     });
 
     if (linkError || !linkData?.properties?.action_link) {
       console.error("Recovery Link Gen Error:", JSON.stringify(linkError, null, 2));
-      throw new Error("Failed to generate login link");
+      throw new Error("Failed to generate recovery link");
     }
 
     const actionLink = linkData.properties.action_link;
@@ -217,7 +217,7 @@ export async function sendDemoRecoveryEmail(email: string) {
     const { error: resendError } = await resend.emails.send({
       from: 'Schologic Team <onboarding@schologic.com>',
       to: email,
-      subject: 'Log in to Schologic',
+      subject: 'Reset your Schologic Password',
       html: `
 <div style="font-family: ui-sans-serif, system-ui, sans-serif; max-width: 550px; margin: 0 auto; line-height: 1.5; color: #334155;">
   <p style="font-size: 12px; color: #94a3b8; margin-bottom: 25px; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px;">
@@ -226,11 +226,11 @@ export async function sendDemoRecoveryEmail(email: string) {
 
   <p>Hello,</p>
   
-  <p>We received a request to log in to your <strong>Schologic</strong> account.</p>
+  <p>We received a request to reset the password for your <strong>Schologic</strong> account.</p>
 
   <div style="margin: 30px 0;">
     <a href="${actionLink}" style="background-color: #0f172a; color: #ffffff; padding: 12px 20px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 15px;">
-      Log In Now
+      Reset Password
     </a>
   </div>
 
