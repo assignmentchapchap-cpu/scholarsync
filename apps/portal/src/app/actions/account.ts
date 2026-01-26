@@ -103,7 +103,7 @@ export async function claimDemoAccount(password: string) {
 
   <p>Hello,</p>
   
-  <p>To finalize the setup of your <strong>Schologic</strong> account and access your university assignments, please verify your email address by clicking the link below:</p>
+  <p>To finalize the setup of your <strong>Schologic</strong> account and access your dashboard, please verify your email address by clicking the link below:</p>
 
   <!-- Clean, Non-Glowy Button -->
   <div style="margin: 30px 0;">

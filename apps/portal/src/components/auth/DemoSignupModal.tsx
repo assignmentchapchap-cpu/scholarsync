@@ -164,8 +164,6 @@ export default function DemoSignupModal({ onClose }: DemoSignupModalProps) {
                         <h3 className="text-xl font-bold text-slate-800 mb-2">Welcome Back!</h3>
                         <p className="text-slate-500 text-sm mb-6">
                             It looks like <strong>{formData.email}</strong> already has an account.
-                            <br /><br />
-                            Since demo accounts don&apos;t have passwords initially, we can email you a magic link to log in.
                         </p>
 
                         <button
