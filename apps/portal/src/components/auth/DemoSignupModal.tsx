@@ -13,7 +13,7 @@ interface DemoSignupModalProps {
 
 export default function DemoSignupModal({ onClose }: DemoSignupModalProps) {
     const [loading, setLoading] = useState(false);
-    const [step, setStep] = useState<'form' | 'creating'>('form');
+    const [step, setStep] = useState<'form' | 'creating' | 'exists'>('form');
     const [formData, setFormData] = useState({
         title: 'Dr.',
         firstName: '',
@@ -62,6 +62,11 @@ export default function DemoSignupModal({ onClose }: DemoSignupModalProps) {
             }
 
             if (!res.ok) {
+                if (res.status === 409) {
+                    setStep('exists');
+                    setLoading(false);
+                    return;
+                }
                 throw new Error(data.error || 'Failed to create demo account');
             }
 
@@ -106,6 +111,22 @@ export default function DemoSignupModal({ onClose }: DemoSignupModalProps) {
         }
     };
 
+    const handleRecovery = async () => {
+        setLoading(true);
+        try {
+            const { error } = await supabase.auth.resetPasswordForEmail(formData.email, {
+                redirectTo: `${window.location.origin}/auth/callback?next=/instructor/dashboard`,
+            });
+            if (error) throw error;
+            showToast('Login link sent! Check your email.', 'success');
+            onClose();
+        } catch (err: any) {
+            console.error(err);
+            showToast(err.message || "Failed to send recovery email", 'error');
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
             <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden relative">
@@ -130,6 +151,33 @@ export default function DemoSignupModal({ onClose }: DemoSignupModalProps) {
                         <p className="text-slate-500 text-sm max-w-[260px]">
                             We are creating a populated class, adding students, and generating sample submissions for you.
                         </p>
+                    </div>
+                ) : step === 'exists' ? (
+                    <div className="p-8 text-center animate-in fade-in slide-in-from-right-4">
+                        <div className="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <User className="w-8 h-8 text-amber-500" />
+                        </div>
+                        <h3 className="text-xl font-bold text-slate-800 mb-2">Welcome Back!</h3>
+                        <p className="text-slate-500 text-sm mb-6">
+                            It looks like <strong>{formData.email}</strong> already has an account.
+                            <br /><br />
+                            Since demo accounts don&apos;t have passwords initially, we can email you a magic link to log in.
+                        </p>
+
+                        <button
+                            onClick={handleRecovery}
+                            disabled={loading}
+                            className="w-full bg-slate-900 text-white font-bold py-3.5 rounded-xl hover:bg-black transition-all shadow-lg active:scale-[0.98] flex items-center justify-center gap-2 mb-3"
+                        >
+                            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <span>Email Me a Login Link</span>}
+                        </button>
+
+                        <button
+                            onClick={() => setStep('form')}
+                            className="text-slate-400 font-bold text-xs hover:text-slate-600"
+                        >
+                            Use a different email
+                        </button>
                     </div>
                 ) : (
                     <div className="p-8">

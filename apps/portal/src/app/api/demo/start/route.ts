@@ -40,7 +40,9 @@ export async function POST(req: Request) {
 
         if (userError || !userData.user) {
             console.error("Demo User Create Error:", userError);
-            return NextResponse.json({ error: 'Failed to create demo user' }, { status: 500 });
+            const status = userError?.code === 'unique_violation' || userError?.message?.includes('already registered') ? 409 : 500;
+            const message = status === 409 ? 'This email is already registered.' : 'Failed to create demo user';
+            return NextResponse.json({ error: message, code: userError?.code }, { status });
         }
 
         const userId = userData.user.id;

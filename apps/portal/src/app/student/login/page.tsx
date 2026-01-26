@@ -62,7 +62,15 @@ export default function StudentLoginPage() {
                     }
                 });
 
-                if (authErr) throw authErr;
+                if (authErr) {
+                    if (authErr.message.includes('already registered') || authErr.code === 'unique_violation') {
+                        throw new Error("This email is already registered. Please log in.");
+                    }
+                    throw authErr;
+                }
+                if (authData.user && authData.user.identities && authData.user.identities.length === 0) {
+                    throw new Error("This email is already registered. Please log in.");
+                }
                 if (!authData.user) throw new Error("Signup failed");
 
                 // 3. Upsert Profile (Trigger handles creation, but we update details)

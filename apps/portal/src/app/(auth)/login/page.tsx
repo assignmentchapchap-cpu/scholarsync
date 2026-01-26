@@ -65,7 +65,7 @@ function LoginContent() {
                 if (signUpError) throw signUpError;
 
                 if (data.user && data.user.identities && data.user.identities.length === 0) {
-                    throw new Error('This email is already registered. Please sign in instead.');
+                    throw new Error('This email is already registered. Please sign in or reset your password.');
                 }
 
                 setSuccessMsg('Account created! Please check your email to confirm your account.');
