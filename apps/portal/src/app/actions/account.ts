@@ -79,7 +79,7 @@ export async function claimDemoAccount(password: string) {
       type: 'magiclink',
       email: email,
       options: {
-        redirectTo: `${origin}/auth/callback`
+        redirectTo: `${origin}/auth/callback?next=/instructor/dashboard`
       }
     });
 
@@ -164,7 +164,7 @@ export async function sendDemoRecoveryEmail(email: string) {
       type: 'magiclink',
       email: email,
       options: {
-        redirectTo: `${origin}/instructor/dashboard`
+        redirectTo: `${origin}/auth/callback?next=/instructor/dashboard`
       }
     });
 
