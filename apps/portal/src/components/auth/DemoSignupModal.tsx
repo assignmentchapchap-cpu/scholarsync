@@ -63,12 +63,15 @@ export default function DemoSignupModal({ onClose }: DemoSignupModalProps) {
             }
 
             if (!res.ok) {
+                console.error("Demo Signup Error Status:", res.status);
+                console.error("Demo Signup Error Data:", data);
                 if (res.status === 409) {
+                    console.log("Status is 409, switching to exists step");
                     setStep('exists');
                     setLoading(false);
                     return;
                 }
-                throw new Error(data.error || 'Failed to create demo account');
+                throw new Error(data.error || `Failed to create demo account (Status: ${res.status})`);
             }
 
             const { email, password } = data;
