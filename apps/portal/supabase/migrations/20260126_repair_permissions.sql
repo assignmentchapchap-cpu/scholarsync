@@ -2,8 +2,43 @@
 -- Description: Fixes missing RLS policies for Classes, Profiles, and Submissions. Adds Cascade Deletion for Users.
 
 -- ============================================================================
--- 1. PROFILES: Fix Deletion & Permissions
+-- 1. PROFILES: Fix Deletion, Permissions & Auto-Creation
 -- ============================================================================
+
+-- 1.0 Trigger & Backfill ("The Fix" for missing profiles)
+-- Function to handle new user signup
+CREATE OR REPLACE FUNCTION public.handle_new_user() 
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.profiles (id, email, full_name, role)
+  VALUES (
+    new.id, 
+    new.email, 
+    new.raw_user_meta_data->>'full_name', 
+    COALESCE(new.raw_user_meta_data->>'role', 'student') -- Default to student if not set
+  );
+  RETURN new;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Trigger to call function on Signup
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
+
+-- Backfill: Fix any existing users who have NO profile
+INSERT INTO public.profiles (id, email, full_name, role)
+SELECT 
+  id, 
+  email, 
+  raw_user_meta_data->>'full_name', 
+  COALESCE(raw_user_meta_data->>'role', 'student') 
+FROM auth.users
+WHERE id NOT IN (SELECT id FROM public.profiles)
+ON CONFLICT (id) DO NOTHING;
+
+
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 
 -- 1.1 FK Integrity: Allow deleting a User to automatically delete their Profile

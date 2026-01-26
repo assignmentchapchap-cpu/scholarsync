@@ -97,6 +97,14 @@ function ClassesContent() {
                 return;
             }
 
+            // SAFETY CHECK: Ensure Profile Exists
+            const { data: profile } = await supabase.from('profiles').select('id').eq('id', user.id).single();
+            if (!profile) {
+                showToast('Profile missing. Please refresh or contact support.', 'error');
+                // Optional: Attempt to self-heal or log
+                return;
+            }
+
             const inviteCode = Math.random().toString(36).substring(2, 8).toUpperCase();
 
             const { data, error } = await supabase
