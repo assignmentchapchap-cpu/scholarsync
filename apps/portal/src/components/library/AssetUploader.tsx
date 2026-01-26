@@ -41,7 +41,7 @@ export default function AssetUploader({ onClose, onSuccess }: AssetUploaderProps
             console.error(err);
             const message = err instanceof Error ? err.message : 'Upload failed';
             setError(message);
-            showToast("Upload failed", 'error');
+            showToast(message, 'error'); // Show specific error
         } finally {
             setUploading(false);
         }

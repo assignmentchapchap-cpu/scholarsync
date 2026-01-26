@@ -24,6 +24,7 @@ function ClassesContent() {
 
     // Modal State
     const [creating, setCreating] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [newClassName, setNewClassName] = useState('');
     const [classCode, setClassCode] = useState('');
     const [codeError, setCodeError] = useState<string | undefined>(undefined);
@@ -88,8 +89,13 @@ function ClassesContent() {
         }
 
         try {
+            setIsSubmitting(true);
             const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return;
+
+            if (!user) {
+                showToast('You must be logged in to create a class', 'error');
+                return;
+            }
 
             const inviteCode = Math.random().toString(36).substring(2, 8).toUpperCase();
 
@@ -122,6 +128,8 @@ function ClassesContent() {
             console.error('Error creating class:', error);
             const message = error instanceof Error ? error.message : 'Failed to create class.';
             showToast(message, 'error');
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -337,10 +345,11 @@ function ClassesContent() {
                                 <div className="pt-4">
                                     <button
                                         type="submit"
-                                        disabled={!!codeError}
-                                        className="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-lg active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        disabled={!!codeError || isSubmitting}
+                                        className="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-lg active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                                     >
-                                        Create Class
+                                        {isSubmitting && <div className="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin" />}
+                                        {isSubmitting ? 'Creating...' : 'Create Class'}
                                     </button>
                                 </div>
                             </form>
