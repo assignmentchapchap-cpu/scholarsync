@@ -12,6 +12,8 @@ import NotificationBell from '@/components/NotificationBell';
 import StudentCalendar from '@/components/student/StudentCalendar';
 import GlobalAssignmentsCard from '@/components/student/GlobalAssignmentsCard';
 import { useToast } from '@/context/ToastContext';
+import { useUser } from '@/context/UserContext';
+
 
 type EnrollmentWithClass = {
     class_id: string;
@@ -42,7 +44,9 @@ function DashboardContent() {
     const [joining, setJoining] = useState(false);
     const [showMobileSearch, setShowMobileSearch] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
-    const [user, setUser] = useState<User | null>(null);
+
+    // Use Context
+    const { user, loading: userLoading } = useUser();
 
     const supabase = createClient();
     const router = useRouter();
@@ -56,14 +60,15 @@ function DashboardContent() {
     }, [searchParams]);
 
     useEffect(() => {
-        fetchDashboardData();
-    }, []);
+        if (user) {
+            fetchDashboardData();
+        }
+    }, [user]);
 
     const fetchDashboardData = async () => {
         try {
-            const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
-            setUser(user);
+            // No need to set user locally, we use context user
 
             // 1. Fetch Enrollments
             const { data: enrollData, error: enrollErr } = await supabase
@@ -113,7 +118,6 @@ function DashboardContent() {
         setJoining(true);
 
         try {
-            const { data: { user } } = await supabase.auth.getUser();
             if (!user) {
                 router.push('/login?role=student');
                 return;

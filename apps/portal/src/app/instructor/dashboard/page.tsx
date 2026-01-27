@@ -14,6 +14,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 
 import { Suspense } from 'react';
 import { useToast } from '@/context/ToastContext';
+import { useUser } from '@/context/UserContext';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 type Class = Database['public']['Tables']['classes']['Row'];
@@ -30,7 +31,9 @@ type SearchResult =
 function DashboardContent() {
     const supabase = createClient();
     const router = useRouter();
-    const [user, setUser] = useState<User | null>(null);
+    const { user, loading: userLoading } = useUser();
+
+    // Local State
     const [classes, setClasses] = useState<Class[]>([]);
     const [allSubmissions, setAllSubmissions] = useState<Submission[]>([]);
     const [allAssignments, setAllAssignments] = useState<Assignment[]>([]);
@@ -149,70 +152,69 @@ function DashboardContent() {
 
     useEffect(() => {
         const fetchData = async () => {
+            if (!user) return;
             setLoading(true);
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user) {
-                setUser(user);
 
-                // Fetch Profile for Name
-                const { data: profile } = await supabase
-                    .from('profiles')
-                    .select('first_name, last_name, full_name')
-                    .eq('id', user.id)
-                    .maybeSingle();
+            // Using context user directly
 
-                if (profile) {
-                    let fName = profile.first_name;
-                    if (!fName && profile.full_name) {
-                        fName = profile.full_name.split(' ')[0];
-                    }
-                    if (fName) setFirstName(fName);
-                } else if (user.user_metadata?.first_name) {
-                    setFirstName(user.user_metadata.first_name);
-                } else if (user.user_metadata?.full_name) {
-                    setFirstName(user.user_metadata.full_name.split(' ')[0]);
+            // Fetch Profile for Name
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('first_name, last_name, full_name')
+                .eq('id', user.id)
+                .maybeSingle();
+
+            if (profile) {
+                let fName = profile.first_name;
+                if (!fName && profile.full_name) {
+                    fName = profile.full_name.split(' ')[0];
+                }
+                if (fName) setFirstName(fName);
+            } else if (user.user_metadata?.first_name) {
+                setFirstName(user.user_metadata.first_name);
+            } else if (user.user_metadata?.full_name) {
+                setFirstName(user.user_metadata.full_name.split(' ')[0]);
+            }
+
+            // Fetch Classes
+            const { data: classesData, error: classesError } = await supabase
+                .from('classes')
+                .select('*')
+                .eq('instructor_id', user.id);
+
+            if (classesData && classesData.length > 0) {
+                setClasses(classesData);
+                const classIds = classesData.map((c) => c.id);
+
+                // Fetch All Submissions & Assignments for these classes
+                const subQuery = supabase.from('submissions').select('*').in('class_id', classIds);
+                const assignQuery = supabase.from('assignments').select('*').in('class_id', classIds);
+                const enrollQuery = supabase.from('enrollments').select('*, profiles:student_id(*)').in('class_id', classIds);
+                const eventsQuery = supabase.from('instructor_events').select('*').eq('user_id', user.id);
+
+                const [submissionsRes, assignmentsRes, enrollmentsRes, eventsRes] = await Promise.all([
+                    subQuery,
+                    assignQuery,
+                    enrollQuery,
+                    eventsQuery
+                ]);
+
+                if (submissionsRes.data) {
+                    setAllSubmissions(submissionsRes.data);
+                    calculateStats(classesData, submissionsRes.data);
+                }
+                if (assignmentsRes.data) {
+                    setAllAssignments(assignmentsRes.data);
+                }
+                if (enrollmentsRes.data) {
+                    setAllEnrollments(enrollmentsRes.data as unknown as Enrollment[]);
+                }
+                if (eventsRes.data) {
+                    setAllEvents(eventsRes.data);
                 }
 
-                // Fetch Classes
-                const { data: classesData, error: classesError } = await supabase
-                    .from('classes')
-                    .select('*')
-                    .eq('instructor_id', user.id);
-
-                if (classesData && classesData.length > 0) {
-                    setClasses(classesData);
-                    const classIds = classesData.map((c) => c.id);
-
-                    // Fetch All Submissions & Assignments for these classes
-                    const subQuery = supabase.from('submissions').select('*').in('class_id', classIds);
-                    const assignQuery = supabase.from('assignments').select('*').in('class_id', classIds);
-                    const enrollQuery = supabase.from('enrollments').select('*, profiles:student_id(*)').in('class_id', classIds);
-                    const eventsQuery = supabase.from('instructor_events').select('*').eq('user_id', user.id);
-
-                    const [submissionsRes, assignmentsRes, enrollmentsRes, eventsRes] = await Promise.all([
-                        subQuery,
-                        assignQuery,
-                        enrollQuery,
-                        eventsQuery
-                    ]);
-
-                    if (submissionsRes.data) {
-                        setAllSubmissions(submissionsRes.data);
-                        calculateStats(classesData, submissionsRes.data);
-                    }
-                    if (assignmentsRes.data) {
-                        setAllAssignments(assignmentsRes.data);
-                    }
-                    if (enrollmentsRes.data) {
-                        setAllEnrollments(enrollmentsRes.data as unknown as Enrollment[]);
-                    }
-                    if (eventsRes.data) {
-                        setAllEvents(eventsRes.data);
-                    }
-
-                    if (submissionsRes.data && classesData) {
-                        calculateAIStats(classesData, submissionsRes.data, enrollmentsRes.data || []);
-                    }
+                if (submissionsRes.data && classesData) {
+                    calculateAIStats(classesData, submissionsRes.data, enrollmentsRes.data || []);
                 }
             }
             setLoading(false);

@@ -1,8 +1,7 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
-import { createClient } from "@schologic/database";
+import { useState } from 'react';
 import { Bell, Check, X } from 'lucide-react';
 import Link from 'next/link';
 
@@ -16,64 +15,11 @@ type Notification = {
     user_id: string | null;
 };
 
+import { useNotifications } from '@/context/NotificationContext';
+
 export default function NotificationBell() {
-    const [notifications, setNotifications] = useState<Notification[]>([]);
-    const [unreadCount, setUnreadCount] = useState(0);
+    const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
     const [isOpen, setIsOpen] = useState(false);
-    const [loading, setLoading] = useState(true);
-    const supabase = createClient();
-
-    useEffect(() => {
-        fetchNotifications();
-
-        // Realtime subscription
-        const channel = supabase
-            .channel('realtime:notifications')
-            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' },
-                (payload) => {
-                    // Ideally check if payload.new.user_id matches current user, 
-                    // but we can't easily here without storing user in state/context. 
-                    // Simpler to just refetch or rely on RLS filtering (but fetch is safe).
-                    fetchNotifications();
-                }
-            )
-            .subscribe();
-
-        return () => {
-            supabase.removeChannel(channel);
-        };
-    }, []);
-
-    const fetchNotifications = async () => {
-        try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return;
-
-            const { data, error } = await supabase
-                .from('notifications')
-                .select('*')
-                .eq('user_id', user.id)
-                .order('created_at', { ascending: false })
-                .limit(10);
-
-            if (data) {
-                setNotifications(data);
-                setUnreadCount(data.filter(n => !n.is_read).length);
-            }
-        } catch (error) {
-            console.error(error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const markAsRead = async (id: string) => {
-        // Optimistic update
-        setNotifications(notifications.map(n => n.id === id ? { ...n, is_read: true } : n));
-        setUnreadCount(prev => Math.max(0, prev - 1));
-
-        await supabase.from('notifications').update({ is_read: true }).eq('id', id);
-    };
 
     return (
         <div className="relative">
@@ -94,7 +40,7 @@ export default function NotificationBell() {
                         <div className="p-4 border-b border-slate-50 bg-slate-50/50 flex justify-between items-center">
                             <h3 className="font-bold text-slate-800 text-sm">Notifications</h3>
                             {unreadCount > 0 && (
-                                <button onClick={() => notifications.forEach(n => markAsRead(n.id))} className="text-xs font-bold text-indigo-600 hover:text-indigo-800">
+                                <button onClick={() => markAllAsRead()} className="text-xs font-bold text-indigo-600 hover:text-indigo-800">
                                     Mark all read
                                 </button>
                             )}

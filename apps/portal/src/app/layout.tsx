@@ -9,6 +9,9 @@ export const metadata: Metadata = {
 import { ToastProvider } from "@/context/ToastContext";
 import DemoBanner from '@/components/DemoBanner';
 import { UniversalReaderProvider } from '@/components/providers/UniversalReaderProvider';
+import { UserProvider } from "@/context/UserContext";
+import { NotificationProvider } from "@/context/NotificationContext";
+
 
 export default function RootLayout({
   children,
@@ -22,10 +25,14 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <ToastProvider>
-          <UniversalReaderProvider>
-            <DemoBanner />
-            {children}
-          </UniversalReaderProvider>
+          <UserProvider>
+            <UniversalReaderProvider>
+              <NotificationProvider>
+                <DemoBanner />
+                {children}
+              </NotificationProvider>
+            </UniversalReaderProvider>
+          </UserProvider>
         </ToastProvider>
       </body >
     </html >

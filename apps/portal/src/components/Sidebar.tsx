@@ -9,6 +9,8 @@ import { useEffect, useState } from 'react';
 import NotificationBell from './NotificationBell';
 import { createClient } from "@schologic/database";
 import { useRouter } from 'next/navigation';
+import { useUser } from '@/context/UserContext';
+
 
 
 // Simple utility if @/lib/utils doesn't exist yet, but previous files used it? 
@@ -54,17 +56,9 @@ export default function Sidebar({ role }: SidebarProps) {
     ];
 
     const [isMobileOpen, setIsMobileOpen] = useState(false);
-    const [isDemo, setIsDemo] = useState(false);
+    const { isDemo } = useUser();
 
-    useEffect(() => {
-        const checkUser = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user?.user_metadata?.is_demo === true || user?.email?.endsWith('@schologic.demo')) {
-                setIsDemo(true);
-            }
-        };
-        checkUser();
-    }, []);
+    // Removed useEffect for checking user, now handled by UserContext
 
     // Close mobile menu when route changes
     useEffect(() => {
