@@ -11,7 +11,7 @@ import DemoBanner from '@/components/DemoBanner';
 import { UniversalReaderProvider } from '@/components/providers/UniversalReaderProvider';
 import { UserProvider } from "@/context/UserContext";
 import { NotificationProvider } from "@/context/NotificationContext";
-
+import { ChatWidget } from '@/components/chat/ChatWidget';
 
 export default function RootLayout({
   children,
@@ -30,6 +30,7 @@ export default function RootLayout({
               <NotificationProvider>
                 <DemoBanner />
                 {children}
+                <ChatWidget />
               </NotificationProvider>
             </UniversalReaderProvider>
           </UserProvider>
