@@ -2,7 +2,7 @@
  * Vector search utilities for RAG (Retrieval-Augmented Generation)
  */
 
-import { createAdminClient } from '@schologic/database/admin';
+import { createAdminClient } from '@schologic/database';
 
 export interface SearchResult {
     id: string;
