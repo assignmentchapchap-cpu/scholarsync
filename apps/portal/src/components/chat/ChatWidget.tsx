@@ -43,8 +43,9 @@ export default function ChatWidget() {
             });
 
             if (!response.ok) {
+                const errorText = await response.text();
                 if (response.status === 403) throw new Error("Instructor access only.");
-                throw new Error('Failed to fetch response');
+                throw new Error(errorText || `Error ${response.status}: Failed to fetch response`);
             }
 
             if (!response.body) return;
