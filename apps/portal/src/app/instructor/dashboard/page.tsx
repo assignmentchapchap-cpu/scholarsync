@@ -3,7 +3,7 @@
 
 import { createClient, Database } from "@schologic/database";
 import { User } from '@supabase/supabase-js';
-import { Home, Clock, ChevronRight, X, FileText, Search, Plus, Calendar as CalendarIcon, ArrowUpRight } from 'lucide-react';
+import { Home, Clock, ChevronRight, X, FileText, Search, Plus, Calendar as CalendarIcon, ArrowUpRight, CheckCircle, BookOpen } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -21,13 +21,16 @@ import { useUser } from '@/context/UserContext';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 type Class = Database['public']['Tables']['classes']['Row'];
-type Assignment = Database['public']['Tables']['assignments']['Row'];
+type Assignment = Database['public']['Tables']['assignments']['Row'] & Partial<{ assignment_type: string | null }>;
 type Submission = Database['public']['Tables']['submissions']['Row'];
 type Enrollment = Database['public']['Tables']['enrollments']['Row'] & { profiles: Profile | null };
 type InstructorEvent = Database['public']['Tables']['instructor_events']['Row'];
+type Resource = Database['public']['Tables']['class_assets']['Row'] & { assets: Database['public']['Tables']['assets']['Row'] | null };
 type SearchResult =
     | { type: 'class'; id: string; title: string; subtitle: string; url: string }
     | { type: 'assignment'; id: string; title: string; subtitle: string; url: string }
+    | { type: 'quiz'; id: string; title: string; subtitle: string; url: string }
+    | { type: 'resource'; id: string; title: string; subtitle: string; url: string }
     | { type: 'event'; id: string; title: string; subtitle: string; url: string }
     | { type: 'student'; id: string; classId: string; title: string; subtitle: string; image: string | null; url: string };
 
@@ -40,6 +43,7 @@ function DashboardContent() {
     const [classes, setClasses] = useState<Class[]>([]);
     const [allSubmissions, setAllSubmissions] = useState<Submission[]>([]);
     const [allAssignments, setAllAssignments] = useState<Assignment[]>([]);
+    const [allResources, setAllResources] = useState<Resource[]>([]);
     const [allEvents, setAllEvents] = useState<InstructorEvent[]>([]);
     const [stats, setStats] = useState({ ungraded: 0, new: 0 });
     const [allEnrollments, setAllEnrollments] = useState<Enrollment[]>([]);
@@ -93,22 +97,39 @@ function DashboardContent() {
             }
         });
 
-        // 2. Assignments
+        // 2. Assignments & Quizzes
         allAssignments.forEach(a => {
             if (a.title.toLowerCase().includes(query)) {
                 // Find class name
                 const cls = classes.find(c => c.id === a.class_id);
+                const isQuiz = a.assignment_type === 'quiz';
+
                 results.push({
-                    type: 'assignment',
+                    type: isQuiz ? 'quiz' : 'assignment',
                     id: a.id,
                     title: a.title,
                     subtitle: `${cls?.name || 'Unknown Class'} • Due ${a.due_date ? new Date(a.due_date).toLocaleDateString() : 'TBD'}`,
-                    url: `/instructor/class/${a.class_id}?tab=assignments` // Can't link direct to assignment modal easily without query param
+                    url: `/instructor/class/${a.class_id}?tab=assignments`
                 });
             }
         });
 
-        // 3. Events
+        // 3. Resources
+        allResources.forEach(r => {
+            const assetTitle = r.assets?.title || 'Untitled Resource';
+            if (assetTitle.toLowerCase().includes(query)) {
+                const cls = classes.find(c => c.id === r.class_id);
+                results.push({
+                    type: 'resource',
+                    id: r.id,
+                    title: assetTitle,
+                    subtitle: `${cls?.name || 'Unknown Class'} • ${r.assets?.asset_type || 'File'}`,
+                    url: `/instructor/class/${r.class_id}?tab=resources`
+                });
+            }
+        });
+
+        // 4. Events
         allEvents.forEach(e => {
             if (e.event_date && (e.title.toLowerCase().includes(query) || e.description?.toLowerCase().includes(query))) {
                 results.push({
@@ -121,14 +142,14 @@ function DashboardContent() {
             }
         });
 
-        // 4. Students
+        // 5. Students
         // Deduplicate students first?
         const seenStudents = new Set();
         allEnrollments.forEach(e => {
             const student = e.profiles;
             if (!student) return;
-            const matchName = student.full_name?.toLowerCase().includes(query);
-            const matchReg = student.registration_number?.toLowerCase().includes(query);
+            const matchName = (student.full_name || '').toLowerCase().includes(query);
+            const matchReg = (student.registration_number || '').toLowerCase().includes(query);
 
             if ((matchName || matchReg) && !seenStudents.has(e.student_id)) {
                 seenStudents.add(e.student_id);
@@ -193,12 +214,14 @@ function DashboardContent() {
                 const subQuery = supabase.from('submissions').select('*').in('class_id', classIds);
                 const assignQuery = supabase.from('assignments').select('*').in('class_id', classIds);
                 const enrollQuery = supabase.from('enrollments').select('*, profiles:student_id(*)').in('class_id', classIds);
+                const resourceQuery = supabase.from('class_assets').select('*, assets(*)').in('class_id', classIds);
                 const eventsQuery = supabase.from('instructor_events').select('*').eq('user_id', user.id);
 
-                const [submissionsRes, assignmentsRes, enrollmentsRes, eventsRes] = await Promise.all([
+                const [submissionsRes, assignmentsRes, enrollmentsRes, resourcesRes, eventsRes] = await Promise.all([
                     subQuery,
                     assignQuery,
                     enrollQuery,
+                    resourceQuery,
                     eventsQuery
                 ]);
 
@@ -211,6 +234,9 @@ function DashboardContent() {
                 }
                 if (enrollmentsRes.data) {
                     setAllEnrollments(enrollmentsRes.data as unknown as Enrollment[]);
+                }
+                if (resourcesRes.data) {
+                    setAllResources(resourcesRes.data as unknown as Resource[]);
                 }
                 if (eventsRes.data) {
                     setAllEvents(eventsRes.data);
@@ -343,7 +369,6 @@ function DashboardContent() {
                                 placeholder="Search students, classes..."
                                 value={searchQuery}
                                 onChange={e => setSearchQuery(e.target.value)}
-                                leftIcon={<Search className="w-5 h-5 text-indigo-600" />}
                                 fullWidth
                             />
                             <button onClick={() => { setShowMobileSearch(false); setSearchQuery(''); }} className="p-2 bg-slate-50 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all">
@@ -401,6 +426,28 @@ function DashboardContent() {
                                                 </div>
                                             )}
 
+                                            {/* Quizzes */}
+                                            {searchResults.filter(r => r.type === 'quiz').length > 0 && (
+                                                <div className="p-2 border-t border-slate-50">
+                                                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2 mb-1 mt-1">Quizzes</div>
+                                                    {searchResults.filter(r => r.type === 'quiz').map(item => (
+                                                        <div
+                                                            key={item.id}
+                                                            onClick={() => router.push(item.url)}
+                                                            className="flex items-center gap-3 p-2 hover:bg-slate-50 rounded-lg cursor-pointer transition-colors"
+                                                        >
+                                                            <div className="w-8 h-8 rounded-lg bg-violet-50 flex items-center justify-center text-violet-600">
+                                                                <CheckCircle className="w-4 h-4" />
+                                                            </div>
+                                                            <div>
+                                                                <div className="text-sm font-bold text-slate-700">{item.title}</div>
+                                                                <div className="text-[10px] text-slate-400">{item.subtitle}</div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+
                                             {/* Assignments */}
                                             {searchResults.filter(r => r.type === 'assignment').length > 0 && (
                                                 <div className="p-2 border-t border-slate-50">
@@ -413,6 +460,28 @@ function DashboardContent() {
                                                         >
                                                             <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600">
                                                                 <FileText className="w-4 h-4" />
+                                                            </div>
+                                                            <div>
+                                                                <div className="text-sm font-bold text-slate-700">{item.title}</div>
+                                                                <div className="text-[10px] text-slate-400">{item.subtitle}</div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+
+                                            {/* Resources */}
+                                            {searchResults.filter(r => r.type === 'resource').length > 0 && (
+                                                <div className="p-2 border-t border-slate-50">
+                                                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2 mb-1 mt-1">Resources</div>
+                                                    {searchResults.filter(r => r.type === 'resource').map(item => (
+                                                        <div
+                                                            key={item.id}
+                                                            onClick={() => router.push(item.url)}
+                                                            className="flex items-center gap-3 p-2 hover:bg-slate-50 rounded-lg cursor-pointer transition-colors"
+                                                        >
+                                                            <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
+                                                                <BookOpen className="w-4 h-4" />
                                                             </div>
                                                             <div>
                                                                 <div className="text-sm font-bold text-slate-700">{item.title}</div>

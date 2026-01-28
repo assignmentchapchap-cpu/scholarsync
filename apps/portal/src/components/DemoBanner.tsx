@@ -51,10 +51,13 @@ export default function DemoBanner() {
 
             <Link
                 href="/instructor/settings"
-                className="bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full text-xs flex items-center gap-1.5 transition-colors backdrop-blur-sm border border-white/20"
+                className="relative inline-flex h-8 overflow-hidden rounded-full p-[2px] focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-orange-500 shadow-md transform hover:scale-105 transition-transform duration-200"
             >
-                <Sparkles className="w-3 h-3 text-amber-100" />
-                Upgrade to Standard
+                <span className="absolute inset-[-1000%] animate-[spin_3s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,#fbbf24_0%,#6366f1_33%,#ffffff_66%,#fbbf24_100%)]" />
+                <span className="inline-flex h-full w-full items-center justify-center rounded-full bg-white px-4 py-1 text-xs font-black text-orange-600 backdrop-blur-3xl gap-1.5 uppercase tracking-wide">
+                    <Sparkles className="w-3.5 h-3.5 text-orange-500 fill-orange-200 animate-pulse" />
+                    Upgrade to Standard
+                </span>
             </Link>
         </div>
     );

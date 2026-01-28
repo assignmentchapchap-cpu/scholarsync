@@ -3,7 +3,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { createClient } from "@schologic/database";
-import { BookOpen, Calendar, Clock, ArrowRight, Plus, Search, User as UserIcon, X } from 'lucide-react';
+import { BookOpen, Calendar, Clock, ArrowRight, Plus, Search, User as UserIcon, X, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Database } from "@schologic/database";
@@ -34,6 +34,17 @@ type AssignmentWithClass = {
     title: string;
     due_date: string | null;
     max_points: number;
+    assignment_type: string | null;
+    classes: {
+        name: string;
+    } | null;
+};
+
+type ResourceWithClass = {
+    id: string;
+    title: string;
+    type: string | null;
+    class_id: string;
     classes: {
         name: string;
     } | null;
@@ -41,7 +52,8 @@ type AssignmentWithClass = {
 
 function DashboardContent() {
     const [enrollments, setEnrollments] = useState<EnrollmentWithClass[]>([]);
-    const [upcomingAssignments, setUpcomingAssignments] = useState<AssignmentWithClass[]>([]);
+    const [allAssignments, setAllAssignments] = useState<AssignmentWithClass[]>([]);
+    const [resources, setResources] = useState<ResourceWithClass[]>([]);
     const [loading, setLoading] = useState(true);
     const [joinCode, setJoinCode] = useState('');
     const [joining, setJoining] = useState(false);
@@ -89,22 +101,35 @@ function DashboardContent() {
             const validEnrollments = (enrollData as unknown as EnrollmentWithClass[]) || [];
             setEnrollments(validEnrollments);
 
-            // 2. Fetch Assignments for these classes
+            // 2. Fetch All Assignments for search (we'll filter for "Upcoming" view)
             if (validEnrollments.length > 0) {
                 const classIds = validEnrollments.map(e => e.class_id);
+
+                // Fetch Assignments
                 const { data: assignData, error: assignErr } = await supabase
                     .from('assignments')
                     .select(`
-            id, title, due_date, max_points,
+            id, title, due_date, max_points, assignment_type,
             classes (name)
             `)
                     .in('class_id', classIds)
-                    .gte('due_date', new Date().toISOString()) // Only future assignments
-                    .order('due_date', { ascending: true })
-                    .limit(5);
+                    .order('due_date', { ascending: true }); // Keep sorted by date for easy slicing
 
                 if (!assignErr && assignData) {
-                    setUpcomingAssignments(assignData as unknown as AssignmentWithClass[]);
+                    setAllAssignments(assignData as unknown as AssignmentWithClass[]);
+                }
+
+                // Fetch Resources
+                const { data: resourceData, error: resourceErr } = await supabase
+                    .from('class_assets')
+                    .select(`
+                        id, title, type, class_id,
+                        classes (name)
+                    `)
+                    .in('class_id', classIds);
+
+                if (!resourceErr && resourceData) {
+                    setResources(resourceData as unknown as ResourceWithClass[]);
                 }
             }
 
@@ -217,8 +242,17 @@ function DashboardContent() {
         : enrollments;
 
     const filteredAssignments = searchQuery
-        ? upcomingAssignments.filter(a => a.title.toLowerCase().includes(searchQuery.toLowerCase()) || a.classes?.name.toLowerCase().includes(searchQuery.toLowerCase()))
-        : upcomingAssignments;
+        ? allAssignments.filter(a => a.title.toLowerCase().includes(searchQuery.toLowerCase()) || a.classes?.name.toLowerCase().includes(searchQuery.toLowerCase()))
+        : []; // Only show if searching, otherwise we don't show "All" in this specific list
+
+    const filteredResources = searchQuery
+        ? resources.filter(r => r.title.toLowerCase().includes(searchQuery.toLowerCase()) || r.classes?.name.toLowerCase().includes(searchQuery.toLowerCase()))
+        : [];
+
+    // Computed views
+    const upcomingAssignments = allAssignments
+        .filter(a => a.due_date && new Date(a.due_date) >= new Date())
+        .slice(0, 5);
 
     if (loading) return <div className="min-h-screen bg-slate-50 flex items-center justify-center font-bold text-slate-400">Loading Dashboard...</div>;
 
@@ -226,7 +260,7 @@ function DashboardContent() {
         <div className="min-h-screen bg-slate-50 p-6 md:p-8">
             <div className="max-w-6xl mx-auto">
                 {/* Header */}
-                <header className="flex flex-row justify-between items-start md:items-center mb-6 md:mb-10 gap-2 md:gap-6 animate-fade-in relative z-30">
+                <header className="flex flex-row justify-between items-center mb-6 md:mb-10 gap-2 md:gap-6 animate-fade-in relative z-30">
                     {/* Mobile Search Overlay */}
                     {showMobileSearch && (
                         <div className="absolute inset-x-0 -top-2 bottom-0 bg-white z-[60] flex items-center gap-2 p-2 rounded-xl shadow-xl border border-slate-100 animate-in fade-in zoom-in-95 duration-200">
@@ -236,7 +270,6 @@ function DashboardContent() {
                                 placeholder="Search courses or assignments..."
                                 value={searchQuery}
                                 onChange={e => setSearchQuery(e.target.value)}
-                                leftIcon={<Search className="w-5 h-5 text-indigo-600" />}
                                 fullWidth
                             />
                             <button onClick={() => { setShowMobileSearch(false); setSearchQuery(''); }} className="p-2 bg-slate-50 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all">
@@ -251,12 +284,12 @@ function DashboardContent() {
                     </div>
 
                     <div className={`flex items-center gap-2 md:gap-4 shrink-0 ${showMobileSearch ? 'opacity-0 pointer-events-none' : ''}`}>
-                        <form onSubmit={handleJoinClass} className="flex gap-0 shadow-sm rounded-xl overflow-hidden">
+                        <form onSubmit={handleJoinClass} className="flex gap-0 shadow-sm rounded-xl overflow-hidden h-12">
                             <Input
                                 placeholder="Code"
                                 value={joinCode}
                                 onChange={e => setJoinCode(e.target.value)}
-                                className="rounded-r-none border-r-0 w-28 md:w-48 uppercase font-mono placeholder:normal-case placeholder:font-sans py-2.5"
+                                className="rounded-r-none border-r-0 w-28 md:w-48 uppercase font-mono placeholder:normal-case placeholder:font-sans h-12"
                                 fullWidth={false}
                             />
                             <Button
@@ -265,14 +298,14 @@ function DashboardContent() {
                                 isLoading={joining}
                                 size="md" // Match height roughly
                                 variant="success" // Emerald
-                                className="rounded-l-none px-4 md:px-6 h-[50px] md:h-[50px]" // Force height to match input
+                                className="rounded-l-none px-4 md:px-6 h-12" // Force height to match input
                             >
                                 Join
                             </Button>
                         </form>
 
                         <div className="hidden md:block">
-                            <NotificationBell />
+                            <NotificationBell className="h-12 w-12" />
                         </div>
                     </div>
                 </header>
@@ -281,7 +314,7 @@ function DashboardContent() {
                 {searchQuery && (
                     <div className="mb-8 animate-in fade-in slide-in-from-top-2">
                         <h3 className="font-bold text-slate-400 text-sm uppercase mb-4">Search Results</h3>
-                        {filteredEnrollments.length === 0 && filteredAssignments.length === 0 ? (
+                        {filteredEnrollments.length === 0 && filteredAssignments.length === 0 && filteredResources.length === 0 ? (
                             <p className="text-slate-500 italic">No matches found.</p>
                         ) : (
                             <div className="space-y-4">
@@ -293,13 +326,41 @@ function DashboardContent() {
                                         </Card>
                                     </Link>
                                 ))}
-                                {filteredAssignments.map(a => (
+
+                                {/* Quizzes */}
+                                {filteredAssignments.filter(a => a.assignment_type === 'quiz').map(a => (
+                                    <Link key={a.id} href={`/student/assignment/${a.id}`}>
+                                        <Card className="flex items-center gap-2 p-4 hover:border-violet-400 transition-all" hoverEffect>
+                                            <div className="p-1 bg-violet-50 rounded text-violet-600"><CheckCircle className="w-3 h-3" /></div>
+                                            <div>
+                                                <p className="font-bold text-slate-800 text-sm">{a.title}</p>
+                                                <p className="text-xs text-slate-500">Quiz • {a.classes?.name}</p>
+                                            </div>
+                                        </Card>
+                                    </Link>
+                                ))}
+
+                                {/* Assignments */}
+                                {filteredAssignments.filter(a => a.assignment_type !== 'quiz').map(a => (
                                     <Link key={a.id} href={`/student/assignment/${a.id}`}>
                                         <Card className="flex items-center gap-2 p-4 hover:border-indigo-400 transition-all" hoverEffect>
                                             <div className="p-1 bg-indigo-50 rounded text-indigo-600"><Clock className="w-3 h-3" /></div>
                                             <div>
                                                 <p className="font-bold text-slate-800 text-sm">{a.title}</p>
-                                                <p className="text-xs text-slate-500">{a.classes?.name}</p>
+                                                <p className="text-xs text-slate-500">Assignment • {a.classes?.name}</p>
+                                            </div>
+                                        </Card>
+                                    </Link>
+                                ))}
+
+                                {/* Resources */}
+                                {filteredResources.map(r => (
+                                    <Link key={r.id} href={`/student/class/${r.class_id}?tab=resources`}>
+                                        <Card className="flex items-center gap-2 p-4 hover:border-blue-400 transition-all" hoverEffect>
+                                            <div className="p-1 bg-blue-50 rounded text-blue-600"><BookOpen className="w-3 h-3" /></div>
+                                            <div>
+                                                <p className="font-bold text-slate-800 text-sm">{r.title}</p>
+                                                <p className="text-xs text-slate-500">Resource • {r.classes?.name}</p>
                                             </div>
                                         </Card>
                                     </Link>
