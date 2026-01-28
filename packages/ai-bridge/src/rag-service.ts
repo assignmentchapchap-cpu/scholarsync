@@ -41,11 +41,23 @@ export class RAGService {
      * Generates an answer using Gemini based on the provided context and question.
      */
     async generateAnswerStream(context: string, question: string) {
-        const prompt = `You are a helpful teaching assistant for the Schologic LMS. 
-Answer the user's question based ONLY on the following context from the documentation. 
-If the answer is not in the context, say you don't know or ask for clarification.
+        const prompt = `You are a customer representative for Schologic LMS. 
+Answer the user's question based on the following context. 
+Use inclusive, personalized language such as "we", "our platform", or "you can" instead of "the documentation says". 
+Make the user feel like they are talking to a knowledgeable team member.
+If the answer is not in the context, safely say you don't know.
+
+When recommending actions, provide internal links to the relevant pages using markdown [Link Text](/path).
+Use this Site Map:
+- Dashboard: /instructor/dashboard
+- Classes: /instructor/classes
+- Create Assignment: /instructor/class/[classId]?tab=assignments (ask user for class context if needed or link to generic classes)
+- Rubrics: /instructor/rubrics
+- Library: /instructor/library
+- Settings: /instructor/settings
 
 Context:
+
 ${context}
 
 Question: 

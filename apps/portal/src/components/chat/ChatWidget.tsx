@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, X, MessageSquare, Loader2 } from 'lucide-react';
+import { Send, Bot, User, X, MessageSquare, Loader2, Trash2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
 interface Message {
@@ -14,7 +14,33 @@ export default function ChatWidget() {
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [isLoaded, setIsLoaded] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    // Load history on mount
+    useEffect(() => {
+        const saved = localStorage.getItem('schologic_chat_history');
+        if (saved) {
+            try {
+                setMessages(JSON.parse(saved));
+            } catch (e) {
+                console.error("Failed to load chat history", e);
+            }
+        }
+        setIsLoaded(true);
+    }, []);
+
+    // Save history on change
+    useEffect(() => {
+        if (isLoaded) {
+            localStorage.setItem('schologic_chat_history', JSON.stringify(messages));
+        }
+    }, [messages, isLoaded]);
+
+    const handleClearChat = () => {
+        setMessages([]);
+        localStorage.removeItem('schologic_chat_history');
+    };
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -95,12 +121,22 @@ export default function ChatWidget() {
                             <Bot className="w-5 h-5 text-emerald-600" />
                             <h3 className="font-semibold text-slate-900 dark:text-white">AI Assistant</h3>
                         </div>
-                        <button
-                            onClick={() => setIsOpen(false)}
-                            className="text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
-                        >
-                            <X className="w-5 h-5" />
-                        </button>
+                        <div className="flex items-center gap-1">
+                            <button
+                                onClick={handleClearChat}
+                                className="text-slate-500 hover:text-red-600 p-1 rounded-md transition-colors"
+                                title="Clear Chat History"
+                            >
+                                <Trash2 className="w-4 h-4" />
+                            </button>
+                            <button
+                                onClick={() => setIsOpen(false)}
+                                className="text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 p-1"
+                                title="Close/Minimize"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
                     </div>
 
                     {/* Messages */}
