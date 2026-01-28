@@ -81,7 +81,7 @@ export default function ChatWidget() {
             {!isOpen && (
                 <button
                     onClick={() => setIsOpen(true)}
-                    className="bg-brand-primary text-white p-4 rounded-full shadow-lg hover:bg-brand-primary/90 transition-all"
+                    className="bg-emerald-600 text-white p-4 rounded-full shadow-lg hover:bg-emerald-600/90 transition-all"
                 >
                     <MessageSquare className="w-6 h-6" />
                 </button>
@@ -92,7 +92,7 @@ export default function ChatWidget() {
                     {/* Header */}
                     <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50 rounded-t-lg">
                         <div className="flex items-center gap-2">
-                            <Bot className="w-5 h-5 text-brand-primary" />
+                            <Bot className="w-5 h-5 text-emerald-600" />
                             <h3 className="font-semibold text-slate-900 dark:text-white">AI Assistant</h3>
                         </div>
                         <button
@@ -117,7 +117,7 @@ export default function ChatWidget() {
                                 key={idx}
                                 className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}
                             >
-                                <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${msg.role === 'user' ? 'bg-slate-200 text-slate-600' : 'bg-brand-primary/10 text-brand-primary'
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${msg.role === 'user' ? 'bg-slate-200 text-slate-600' : 'bg-emerald-600/10 text-emerald-600'
                                     }`}>
                                     {msg.role === 'user' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
                                 </div>
@@ -135,7 +135,7 @@ export default function ChatWidget() {
                         ))}
                         {isLoading && (
                             <div className="flex gap-3">
-                                <div className="w-8 h-8 rounded-full bg-brand-primary/10 text-brand-primary flex items-center justify-center shrink-0">
+                                <div className="w-8 h-8 rounded-full bg-emerald-600/10 text-emerald-600 flex items-center justify-center shrink-0">
                                     <Bot className="w-4 h-4" />
                                 </div>
                                 <div className="flex items-center">
@@ -154,12 +154,12 @@ export default function ChatWidget() {
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
                                 placeholder="Ask a question..."
-                                className="flex-1 p-2 text-sm border border-slate-300 dark:border-slate-700 rounded-md bg-transparent focus:outline-none focus:ring-2 focus:ring-brand-primary/50"
+                                className="flex-1 p-2 text-sm border border-slate-300 dark:border-slate-700 rounded-md bg-transparent focus:outline-none focus:ring-2 focus:ring-emerald-600/50"
                             />
                             <button
                                 type="submit"
                                 disabled={isLoading || !input.trim()}
-                                className="p-2 bg-brand-primary text-white rounded-md hover:bg-brand-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="p-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-600/90 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <Send className="w-4 h-4" />
                             </button>
