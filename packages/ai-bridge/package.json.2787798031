@@ -1,0 +1,18 @@
+{
+    "name": "@schologic/ai-bridge",
+    "version": "0.1.0",
+    "private": true,
+    "main": "src/index.ts",
+    "scripts": {
+        "build": "tsc"
+    },
+    "dependencies": {
+        "@google/generative-ai": "^0.24.1",
+        "openai": "^4.24.1"
+    },
+    "devDependencies": {
+        "@schologic/config": "workspace:*",
+        "@types/node": "^25.0.8",
+        "typescript": "^5"
+    }
+}

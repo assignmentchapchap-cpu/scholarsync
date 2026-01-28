@@ -30,3 +30,6 @@ yarn-error.log*
 
 # Turbo
 .turbo
+
+# TypeScript Build Info
+*.tsbuildinfo

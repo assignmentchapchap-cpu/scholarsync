@@ -1,4 +1,5 @@
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import ChatWidget from '@/components/chat/ChatWidget';
 
 export default function InstructorLayout({
     children,
@@ -8,6 +9,7 @@ export default function InstructorLayout({
     return (
         <DashboardLayout role="instructor">
             {children}
+            <ChatWidget />
         </DashboardLayout>
     );
 }
