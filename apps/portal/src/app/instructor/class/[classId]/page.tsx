@@ -17,6 +17,7 @@ import { Database } from "@schologic/database";
 import { MODELS, MODEL_LABELS, ScoringMethod, Granularity } from '@schologic/ai-bridge';
 import { isDateBetween, isDateAfter } from '@/lib/date-utils';
 import jsPDF from 'jspdf';
+import { Card } from '@/components/ui/Card';
 import AIStatsCard from '@/components/AIStatsCard';
 import { ClassSettings, DEFAULT_CLASS_SETTINGS, QuizQuestion, QuizData, isQuizData } from '@/types/json-schemas';
 import QuizBuilder from '@/components/instructor/QuizBuilder';
@@ -855,12 +856,12 @@ function ClassDetailsContent({ classId }: { classId: string }) {
                 </div>
 
                 {/* Tabs Navigation */}
-                <div className="flex gap-1 bg-slate-200/50 p-0.5 rounded-xl mb-8 w-full md:w-fit">
+                <div className="flex gap-1 bg-slate-200/50 p-0.5 rounded-xl mb-8 w-full md:w-fit overflow-x-auto no-scrollbar">
                     {(['overview', 'assignments', 'resources', 'grades'] as const).map(tab => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
-                            className={`flex-1 md:flex-none px-2 py-2.5 rounded-lg text-sm font-bold capitalize transition-all ${activeTab === tab
+                            className={`flex-none px-4 py-2.5 rounded-lg text-sm font-bold capitalize transition-all whitespace-nowrap ${activeTab === tab
                                 ? 'bg-white text-indigo-600 shadow-sm'
                                 : 'text-slate-500 hover:text-slate-700'
                                 }`}
@@ -882,9 +883,10 @@ function ClassDetailsContent({ classId }: { classId: string }) {
                         />
 
                         {/* Assignments */}
-                        <div
+                        <Card
                             onClick={() => setShowAssignmentsModal(true)}
-                            className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 cursor-pointer hover:border-emerald-400 hover:shadow-md transition-all group flex flex-col justify-between relative"
+                            className="hover:border-emerald-400 group flex flex-col justify-between relative"
+                            hoverEffect
                         >
                             <div className="absolute top-4 right-4 text-slate-300 group-hover:text-emerald-500 transition-colors">
                                 <ArrowUpRight className="w-5 h-5" />
@@ -897,12 +899,13 @@ function ClassDetailsContent({ classId }: { classId: string }) {
                                 <p className="text-3xl md:text-4xl font-black text-slate-900">{assignments.length}</p>
                                 <p className="text-xs text-slate-400 mt-1 font-bold uppercase tracking-wider">Total Assignments</p>
                             </div>
-                        </div>
+                        </Card>
 
                         {/* Submissions (New & Ungraded) */}
-                        <div
+                        <Card
                             onClick={() => setShowSubmissionsModal(true)}
-                            className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 cursor-pointer hover:border-blue-400 hover:shadow-md transition-all group flex flex-col justify-between relative"
+                            className="hover:border-blue-400 group flex flex-col justify-between relative"
+                            hoverEffect
                         >
                             <div className="absolute top-4 right-4 text-slate-300 group-hover:text-blue-500 transition-colors">
                                 <ArrowUpRight className="w-5 h-5" />
@@ -923,10 +926,11 @@ function ClassDetailsContent({ classId }: { classId: string }) {
                                     </div>
                                 )}
                             </div>
-                        </div>
+                        </Card>
                     </div>
 
                 )}{/* Quick View Modals */}
+
 
                 {/* Assignments Quick View */}
                 {showAssignmentsModal && (
@@ -969,17 +973,19 @@ function ClassDetailsContent({ classId }: { classId: string }) {
                                         }
 
                                         return (
-                                            <div
+                                            <Card
                                                 key={a.id}
                                                 onClick={() => router.push(`/instructor/assignment/${a.id}`)}
-                                                className="flex flex-col md:flex-row items-center gap-4 p-4 rounded-xl bg-slate-50 border border-slate-100 cursor-pointer hover:border-emerald-300 hover:shadow-sm transition-all group"
+                                                className="flex flex-col md:flex-row items-center gap-3 md:gap-4 p-4 hover:border-emerald-300 transition-all group"
+                                                hoverEffect
+                                                noPadding
                                             >
                                                 <div className="flex items-center gap-3 flex-1 w-full">
-                                                    <div className="p-2 bg-emerald-100 text-emerald-600 rounded-lg shrink-0">
-                                                        <FileText className="w-4 h-4" />
+                                                    <div className="p-1.5 md:p-2 bg-emerald-100 text-emerald-600 rounded-lg shrink-0">
+                                                        <FileText className="w-4 h-4 md:w-5 md:h-5" />
                                                     </div>
-                                                    <div>
-                                                        <h4 className="font-bold text-slate-800 group-hover:text-emerald-700 transition-colors truncate">{a.title}</h4>
+                                                    <div className="min-w-0">
+                                                        <h4 className="font-bold text-base md:text-lg text-slate-800 group-hover:text-emerald-700 transition-colors truncate">{a.title}</h4>
                                                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${timeStatus.bg} ${timeStatus.color} md:hidden mt-1 inline-block`}>
                                                             {timeStatus.text}
                                                         </span>
@@ -1007,7 +1013,7 @@ function ClassDetailsContent({ classId }: { classId: string }) {
                                                 </div>
 
                                                 <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-emerald-500 transition-colors shrink-0 hidden md:block" />
-                                            </div>
+                                            </Card>
                                         );
                                     })}
                                     {assignments.length === 0 && <p className="text-center text-slate-400 py-4">No assignments yet.</p>}
@@ -1648,7 +1654,7 @@ function ClassDetailsContent({ classId }: { classId: string }) {
                                         }
 
                                         return (
-                                            <div key={item.id} className="bg-white p-5 rounded-xl border border-slate-200 flex items-center gap-4 group hover:border-indigo-300 transition-colors">
+                                            <Card key={item.id} className="p-4 rounded-xl border border-slate-200 flex items-center gap-4 group hover:border-indigo-300 transition-colors" hoverEffect noPadding>
                                                 <div className={`p-3 rounded-xl shrink-0 ${colorClass}`}>
                                                     {icon}
                                                 </div>
@@ -1685,8 +1691,8 @@ function ClassDetailsContent({ classId }: { classId: string }) {
                                                         </a>
                                                     )}
                                                 </div>
-                                            </div>
-                                        )
+                                            </Card>
+                                        );
                                     })}
                                 </div>
                             )}

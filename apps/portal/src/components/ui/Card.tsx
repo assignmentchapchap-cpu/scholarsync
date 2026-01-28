@@ -18,7 +18,7 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(({
             ref={ref}
             className={twMerge(
                 'bg-white border border-slate-200 shadow-sm rounded-3xl', // The "Premium" token
-                !noPadding && 'p-5 md:p-8', // Responsive padding
+                !noPadding && 'p-4 md:p-8', // Responsive padding
                 hoverEffect && 'hover:shadow-md hover:border-indigo-300 transition-all duration-300 cursor-pointer',
                 className
             )}
