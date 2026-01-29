@@ -16,6 +16,11 @@ export async function OPTIONS() {
     });
 }
 
+// Debug GET handler
+export async function GET() {
+    return NextResponse.json({ status: 'ok', message: 'Chat API is accessible' });
+}
+
 export async function POST(req: NextRequest) {
     try {
         const cookieStore = await cookies();
