@@ -3,7 +3,8 @@ import { RAGService } from "@schologic/ai-bridge";
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 
-export const runtime = 'nodejs'; // Force Node.js runtime for filesystem access (transformers)
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic'; // Prevent static optimization
 
 export async function OPTIONS() {
     return new NextResponse(null, {
