@@ -30,7 +30,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         try {
             const { data: { user } } = await supabase.auth.getUser();
             setUser(user);
-            if (user?.user_metadata?.is_demo === true || user?.email?.endsWith('@schologic.demo')) {
+            if (user?.user_metadata?.is_demo === true) {
                 setIsDemo(true);
             } else {
                 setIsDemo(false);
@@ -50,7 +50,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
             if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
                 setUser(session?.user ?? null);
-                if (session?.user?.user_metadata?.is_demo === true || session?.user?.email?.endsWith('@schologic.demo')) {
+                if (session?.user?.user_metadata?.is_demo === true) {
                     setIsDemo(true);
                 } else {
                     setIsDemo(false);

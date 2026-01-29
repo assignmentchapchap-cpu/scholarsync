@@ -12,7 +12,8 @@ export default function LabPage() {
     useEffect(() => {
         const checkDemo = async () => {
             const supabase = createClient();
-            const { data: { user } } = await supabase.auth.getUser();
+            const { data } = await supabase.auth.getUser();
+            const user = data?.user;
             if (user?.user_metadata?.is_demo === true) {
                 setIsDemo(true);
             }

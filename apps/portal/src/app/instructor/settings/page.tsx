@@ -35,7 +35,8 @@ export default function InstructorSettingsPage() {
 
     useEffect(() => {
         const checkDemo = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
+            const { data } = await supabase.auth.getUser();
+            const user = data?.user;
             if (user?.user_metadata?.is_demo === true) {
                 setIsDemo(true);
             }
@@ -161,14 +162,15 @@ export default function InstructorSettingsPage() {
 
     const fetchSettings = async () => {
         try {
-            const { data: { user } } = await supabase.auth.getUser();
+            const { data: authData } = await supabase.auth.getUser();
+            const user = authData?.user;
             if (!user) return;
 
             const { data, error } = await supabase
                 .from('profiles')
                 .select('settings')
                 .eq('id', user.id)
-                .maybeSingle(); // Use maybeSingle to handle missing profiles gracefully
+                .maybeSingle();
 
             if (error) throw error;
 
@@ -220,7 +222,8 @@ export default function InstructorSettingsPage() {
     const saveSettings = async () => {
         setSaving(true);
         try {
-            const { data: { user } } = await supabase.auth.getUser();
+            const { data: authData } = await supabase.auth.getUser();
+            const user = authData?.user;
             if (!user) return;
 
             const { error } = await supabase
