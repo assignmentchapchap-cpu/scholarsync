@@ -3,6 +3,18 @@ import { RAGService } from "@schologic/ai-bridge";
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 
+export const runtime = 'nodejs'; // Force Node.js runtime for filesystem access (transformers)
+
+export async function OPTIONS() {
+    return new NextResponse(null, {
+        status: 200,
+        headers: {
+            'Access-Control-Allow-Methods': 'POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        },
+    });
+}
+
 export async function POST(req: NextRequest) {
     try {
         const cookieStore = await cookies();
