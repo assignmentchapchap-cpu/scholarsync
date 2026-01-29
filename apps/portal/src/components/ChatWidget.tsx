@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { MessageSquare, X, Send, Loader2, Bot, User } from 'lucide-react';
+import { MessageSquare, X, Send, Loader2, Bot, User, Minimize2 } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import Link from 'next/link';
 import { createClient } from "@schologic/database";
 
 interface Message {
@@ -11,6 +13,7 @@ interface Message {
 
 export default function ChatWidget() {
     const [isOpen, setIsOpen] = useState(false);
+    const [isMinimized, setIsMinimized] = useState(false);
     const [messages, setMessages] = useState<Message[]>([
         { role: 'assistant', content: "Hello! I'm the Schologic Support AI. I can answer questions about the platform or help you find resources. How can I assist you today?" }
     ]);
@@ -83,60 +86,91 @@ export default function ChatWidget() {
     return (
         <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end pointer-events-none">
             {/* Chat Window */}
-            {isOpen && (
-                <div className="mb-4 w-[350px] md:w-[400px] h-[500px] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col pointer-events-auto overflow-hidden animate-in slide-in-from-bottom-5 fade-in duration-200">
+            {isOpen && !isMinimized && (
+                <div className="mb-0 w-[350px] md:w-[380px] h-[550px] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col pointer-events-auto overflow-hidden animate-in slide-in-from-bottom-5 fade-in duration-200">
                     {/* Header */}
                     <div className="bg-slate-900 text-white p-4 flex items-center justify-between shrink-0">
                         <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center">
+                            <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center">
                                 <Bot className="w-5 h-5 text-white" />
                             </div>
                             <div>
                                 <h3 className="font-bold text-sm">Schologic Support</h3>
                                 <div className="flex items-center gap-1.5 opacity-80">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                                     <span className="text-[10px] font-medium uppercase tracking-wider">Online</span>
                                 </div>
                             </div>
                         </div>
-                        <button
-                            onClick={() => setIsOpen(false)}
-                            className="p-1 hover:bg-slate-800 rounded-lg transition-colors"
-                        >
-                            <X className="w-5 h-5" />
-                        </button>
+                        <div className="flex items-center gap-1">
+                            <button
+                                onClick={() => setIsMinimized(true)}
+                                className="p-1.5 hover:bg-slate-800 rounded-lg transition-colors"
+                                title="Minimize"
+                            >
+                                <Minimize2 className="w-4 h-4" />
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setIsOpen(false);
+                                    setIsMinimized(false);
+                                }}
+                                className="p-1.5 hover:bg-slate-800 rounded-lg transition-colors"
+                                title="Close"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
                     </div>
 
                     {/* Messages */}
-                    <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50 scrollbar-thin scrollbar-thumb-slate-200">
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-white scrollbar-thin scrollbar-thumb-slate-200">
                         {messages.map((msg, idx) => (
                             <div
                                 key={idx}
                                 className={`flex items-start gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}
                             >
-                                <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${msg.role === 'user' ? 'bg-indigo-100 text-indigo-600' : 'bg-white border border-slate-200 text-slate-600'
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${msg.role === 'user' ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-50 border border-slate-100 text-slate-500'
                                     }`}>
                                     {msg.role === 'user' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
                                 </div>
 
-                                <div className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${msg.role === 'user'
-                                    ? 'bg-indigo-600 text-white rounded-tr-none shadow-md shadow-indigo-200'
-                                    : 'bg-white border border-slate-200 text-slate-700 rounded-tl-none shadow-sm'
+                                <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${msg.role === 'user'
+                                    ? 'bg-emerald-600 text-white rounded-tr-none'
+                                    : 'bg-slate-50 border border-slate-100 text-slate-700 rounded-tl-none'
                                     }`}>
-                                    {msg.content}
+                                    {msg.role === 'user' ? (
+                                        msg.content
+                                    ) : (
+                                        <div className="prose prose-sm max-w-none prose-slate prose-a:text-emerald-600 prose-a:no-underline hover:prose-a:underline">
+                                            <ReactMarkdown
+                                                components={{
+                                                    a: ({ node, ...props }) => {
+                                                        const isInternal = props.href?.startsWith('/');
+                                                        if (isInternal) {
+                                                            return <Link href={props.href!} className="text-emerald-600 font-bold hover:underline">{props.children}</Link>;
+                                                        }
+                                                        return <a {...props} target="_blank" rel="noopener noreferrer" className="text-emerald-600 font-bold hover:underline" />;
+                                                    }
+                                                }}
+                                            >
+                                                {msg.content}
+                                            </ReactMarkdown>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         ))}
                         {isLoading && messages[messages.length - 1]?.role === 'user' && (
                             <div className="flex items-start gap-3">
-                                <div className="w-8 h-8 rounded-full bg-white border border-slate-200 text-slate-600 flex items-center justify-center shrink-0">
+                                <div className="w-8 h-8 rounded-full bg-slate-50 border border-slate-100 text-slate-500 flex items-center justify-center shrink-0">
                                     <Bot className="w-4 h-4" />
                                 </div>
-                                <div className="bg-white border border-slate-200 px-4 py-3 rounded-2xl rounded-tl-none shadow-sm">
+                                <div className="bg-slate-50 border border-slate-100 px-4 py-2 rounded-2xl rounded-tl-none">
                                     <div className="flex gap-1">
-                                        <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce [animation-delay:-0.3s]" />
-                                        <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce [animation-delay:-0.15s]" />
-                                        <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" />
+                                        <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                                        <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                                        <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" />
                                     </div>
                                 </div>
                             </div>
@@ -145,41 +179,38 @@ export default function ChatWidget() {
                     </div>
 
                     {/* Input */}
-                    <div className="p-3 bg-white border-t border-slate-100 shrink-0">
+                    <div className="p-4 bg-white border-t border-slate-100 shrink-0">
                         <form onSubmit={handleSubmit} className="relative flex items-center gap-2">
                             <input
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
-                                placeholder="Details regarding Schologic..."
-                                className="w-full pl-4 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-sm transition-all"
+                                placeholder="Type a message..."
+                                className="w-full pl-4 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm transition-all"
                             />
                             <button
                                 type="submit"
                                 disabled={!input.trim() || isLoading}
-                                className="absolute right-2 p-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
+                                className="absolute right-2 p-1.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
                             >
                                 {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                             </button>
                         </form>
-                        <div className="text-center mt-2">
-                            <p className="text-[10px] text-slate-400 font-medium">
-                                AI can make mistakes. Verify important info.
-                            </p>
-                        </div>
                     </div>
                 </div>
             )}
 
-            {/* Launcher */}
-            <button
-                onClick={() => setIsOpen(!isOpen)}
-                className={`pointer-events-auto w-14 h-14 rounded-full shadow-xl flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 z-50 ${isOpen
-                    ? 'bg-slate-200 text-slate-600 rotate-90'
-                    : 'bg-indigo-600 text-white hover:bg-indigo-500 hover:shadow-indigo-500/30'
-                    }`}
-            >
-                {isOpen ? <X className="w-6 h-6" /> : <MessageSquare className="w-6 h-6" />}
-            </button>
+            {/* Launcher - Shown when closed OR minimized */}
+            {(!isOpen || isMinimized) && (
+                <button
+                    onClick={() => {
+                        setIsOpen(true);
+                        setIsMinimized(false);
+                    }}
+                    className="pointer-events-auto w-14 h-14 rounded-full shadow-xl flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 bg-emerald-600 text-white hover:bg-emerald-500 hover:shadow-emerald-500/30"
+                >
+                    <MessageSquare className="w-6 h-6" />
+                </button>
+            )}
         </div>
     );
 }

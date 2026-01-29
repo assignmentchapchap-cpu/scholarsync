@@ -50,8 +50,14 @@ export async function POST(req: NextRequest) {
 
     } catch (error: any) {
         console.error("Chat API Error:", error);
+        if (error?.response) {
+            console.error("API Response Error Data:", JSON.stringify(error.response.data, null, 2));
+        }
         return NextResponse.json(
-            { error: error.message || "Internal Server Error" },
+            {
+                error: error.message || "Internal Server Error",
+                details: error?.response?.data || undefined
+            },
             { status: 500 }
         );
     }

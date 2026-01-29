@@ -75,8 +75,8 @@ export class RagService {
         try {
             const embedding = await this.generateEmbedding(query);
 
-            const { data: chunks, error } = await this.supabase.rpc('match_embeddings', {
-                query_embedding: embedding,
+            const { data: chunks, error } = await this.supabase.rpc('match_kb_documents', {
+                query_embedding: JSON.stringify(embedding), // Ensure it's stringyfied if types say string, or just embedding
                 match_threshold: matchThreshold,
                 match_count: matchCount,
             });
@@ -118,26 +118,51 @@ export class RagService {
 Use the following context to answer the user's question. if the answer is not in the context, say so politely or try to answer from general knowledge if it is a general question, but prioritize the context.
 Do not invent facts about the system that are not in the context.
 
+Always format your response using clear Markdown including bolding, lists, and headers where appropriate for readability.
+When referring to specific features or sections of the platform, always include a Markdown link using the following internal routes where possible:
+- Dashboard: [/instructor/dashboard](/instructor/dashboard) or [/student/dashboard](/student/dashboard)
+- Classes: [/instructor/classes](/instructor/classes) or [/student/classes](/student/classes)
+- Submissions/Grading: [/instructor/class/CLASS_ID?tab=assignments](/instructor/class/...id...?tab=assignments)
+- Resources/Materials: [/instructor/class/CLASS_ID?tab=resources](/instructor/class/...id...?tab=resources) or [/instructor/library](/instructor/library)
+- Student Roster: [/instructor/class/CLASS_ID?tab=students](/instructor/class/...id...?tab=students)
+- AI Lab: [/instructor/lab](/instructor/lab)
+- Performance/Grades: [/instructor/performance](/instructor/performance) or [/student/grades](/student/grades)
+- Settings: [/instructor/settings](/instructor/settings)
+- Profile: [/instructor/profile](/instructor/profile)
+
+Note: When linking to a specific class page with a tab, if you don't know the exact class ID, use a placeholder or link to the main classes page.
+
 CONTEXT:
 ${contextText}
 `;
 
         // 3. Construct Gemini History
         // Gemini expects { role: 'user' | 'model', parts: [{ text: ... }] }
-        // We put the system prompt + context in the FIRST user message or treat it as instructions.
-        // Google Generative AI supports system instructions in the model config now, or we can prepend.
+        // The history MUST start with a 'user' message. 
+        // We filter out any leading assistant/model messages.
 
-        // Simple approach: Prepend context to the latest message or system instruction
+        const processedHistory = [];
+        let firstUserFound = false;
+
+        for (const msg of history) {
+            if (msg.role === 'user') {
+                firstUserFound = true;
+            }
+            if (firstUserFound) {
+                processedHistory.push({
+                    role: msg.role === 'assistant' ? 'model' : 'user',
+                    parts: [{ text: msg.content }]
+                });
+            }
+        }
+
         const model = this.genAI.getGenerativeModel({
             model: "gemini-2.5-flash-lite",
             systemInstruction: systemPrompt
         });
 
         const chat = model.startChat({
-            history: history.map(msg => ({
-                role: msg.role === 'assistant' ? 'model' : 'user',
-                parts: [{ text: msg.content }]
-            })),
+            history: processedHistory,
             generationConfig: {
                 maxOutputTokens: 1000,
             }
