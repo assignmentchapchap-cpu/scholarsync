@@ -129,7 +129,7 @@ ${contextText}
 
         // Simple approach: Prepend context to the latest message or system instruction
         const model = this.genAI.getGenerativeModel({
-            model: "gemini-pro",
+            model: "gemini-2.0-flash-lite-preview-02-05",
             systemInstruction: systemPrompt
         });
 
