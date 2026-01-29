@@ -1,6 +1,10 @@
-import { pipeline } from '@xenova/transformers';
+import { pipeline, env } from '@xenova/transformers';
 import { createClient } from '@supabase/supabase-js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+
+// Configure transformers for Vercel (Read-only filesystem)
+env.allowLocalModels = false;
+env.cacheDir = '/tmp';
 
 // Types
 export interface ChatMessage {
@@ -20,6 +24,9 @@ export interface SearchResult {
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const GEMINI_API_KEY = process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY!;
+
+console.log("RagService: Initializing with Supabase URL:", SUPABASE_URL?.split('//')[1]?.split('.')[0] || 'MISSING');
+console.log("RagService: Gemini API Key configured:", !!GEMINI_API_KEY);
 
 export class RagService {
     private static instance: RagService;

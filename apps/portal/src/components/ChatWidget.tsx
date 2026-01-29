@@ -48,7 +48,10 @@ export default function ChatWidget() {
                 }),
             });
 
-            if (!response.ok) throw new Error('Failed to send message');
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || 'Failed to send message');
+            }
             if (!response.body) throw new Error('No response body');
 
             // Add placeholder for AI response
