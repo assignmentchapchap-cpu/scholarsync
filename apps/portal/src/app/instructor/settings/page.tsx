@@ -359,7 +359,7 @@ export default function InstructorSettingsPage() {
                             <div>
                                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">Default AI Detection Model</label>
                                 <div className="grid gap-3">
-                                    {(MODELS ? Object.entries(MODELS) : []).map(([key, value]) => (
+                                    {Object.entries(MODELS).map(([key, value]) => (
                                         <label key={key} className={`flex items-center justify-between p-4 rounded-xl border cursor-pointer transition-all ${settingsForm.model === value
                                             ? 'border-indigo-600 bg-indigo-50/50 shadow-sm ring-1 ring-indigo-600'
                                             : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
@@ -370,7 +370,7 @@ export default function InstructorSettingsPage() {
                                                 </div>
                                                 <div>
                                                     <span className={`block text-sm font-bold ${settingsForm.model === value ? 'text-indigo-900' : 'text-slate-700'}`}>
-                                                        {(MODEL_LABELS && MODEL_LABELS[value]) || key}
+                                                        {MODEL_LABELS[value] || key}
                                                     </span>
                                                     <span className="text-xs text-slate-500 font-medium">{value.split('/').pop()}</span>
                                                 </div>
@@ -386,7 +386,6 @@ export default function InstructorSettingsPage() {
                                             {settingsForm.model === value && <CheckCircle className="w-5 h-5 text-indigo-600 fill-indigo-100" />}
                                         </label>
                                     ))}
-                                    {!MODELS && <p className="text-red-500 text-xs italic">Error: AI Models configuration missing.</p>}
                                 </div>
                             </div>
 
@@ -416,20 +415,20 @@ export default function InstructorSettingsPage() {
                                 <div>
                                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Strictness</label>
                                     <div className="flex flex-col gap-2">
-                                        {(ScoringMethod ? Object.values(ScoringMethod) : []).map((m) => (
-                                            <label key={m as string} className={`relative flex items-center justify-center p-3 rounded-xl border cursor-pointer transition-all text-sm font-bold capitalize ${settingsForm.scoring_method === m
+                                        {Object.values(ScoringMethod).map((m) => (
+                                            <label key={m} className={`relative flex items-center justify-center p-3 rounded-xl border cursor-pointer transition-all text-sm font-bold capitalize ${settingsForm.scoring_method === m
                                                 ? 'bg-indigo-600 text-white border-indigo-600 shadow-md transform scale-[1.02]'
                                                 : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
                                                 }`}>
                                                 <input
                                                     type="radio"
                                                     name="scoring"
-                                                    value={m as string}
+                                                    value={m}
                                                     checked={settingsForm.scoring_method === m}
                                                     onChange={(e) => setSettingsForm({ ...settingsForm, scoring_method: e.target.value as ScoringMethod })}
                                                     className="sr-only"
                                                 />
-                                                {m as string}
+                                                {m}
                                                 {settingsForm.scoring_method === m && <CheckCircle className="w-3 h-3 absolute top-2 right-2 text-indigo-200" />}
                                             </label>
                                         ))}
