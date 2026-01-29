@@ -75,9 +75,12 @@ export default function ChatWidget() {
                 });
             }
 
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            setMessages(prev => [...prev, { role: 'assistant', content: "I'm sorry, I encountered an error. Please try again later." }]);
+            const errorMsg = error.message === 'Failed to send message'
+                ? "I encountered an error connecting to the AI service. Please check your connection or wait a moment."
+                : "I'm sorry, I encountered an error. Please try again later.";
+            setMessages(prev => [...prev, { role: 'assistant', content: errorMsg }]);
         } finally {
             setIsLoading(false);
         }

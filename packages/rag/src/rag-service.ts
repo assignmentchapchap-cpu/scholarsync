@@ -156,8 +156,9 @@ ${contextText}
             }
         }
 
+        const modelName = process.env.GEMINI_MODEL || "gemini-1.5-flash";
         const model = this.genAI.getGenerativeModel({
-            model: "gemini-2.5-flash-lite",
+            model: modelName,
             systemInstruction: systemPrompt
         });
 
