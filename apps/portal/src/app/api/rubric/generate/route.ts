@@ -1,4 +1,4 @@
-import { generateRubric } from "@schologic/ai-bridge";
+import { generateRubric } from "@schologic/ai-bridge/server";
 import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {

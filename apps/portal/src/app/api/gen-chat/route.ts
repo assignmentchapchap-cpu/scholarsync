@@ -1,5 +1,5 @@
 import { createSessionClient } from "@schologic/database/server";
-import { RAGService } from "@schologic/ai-bridge";
+import { RAGService } from "@schologic/ai-bridge/server";
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 

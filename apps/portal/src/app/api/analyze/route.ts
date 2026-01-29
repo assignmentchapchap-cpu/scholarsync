@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { analyzeText, MODELS } from '@schologic/ai-bridge';
+import { MODELS } from '@schologic/ai-bridge';
+import { analyzeText } from '@schologic/ai-bridge/server';
 
 export async function POST(req: NextRequest) {
     try {
