@@ -1,7 +1,7 @@
 'use server';
 
 import { extractTextFromFile } from '@schologic/doc-engine';
-import { summarizeText } from '@schologic/ai-bridge';
+import { summarizeText } from '@schologic/ai-bridge/server';
 
 export interface SummarizeOptions {
     context?: string;

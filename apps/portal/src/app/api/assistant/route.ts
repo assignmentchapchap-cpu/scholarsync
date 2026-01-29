@@ -1,4 +1,4 @@
-import { analyzeSubmission } from "@schologic/ai-bridge";
+import { analyzeSubmission } from "@schologic/ai-bridge/server";
 import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
