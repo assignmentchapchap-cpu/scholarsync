@@ -1,6 +1,5 @@
-
 import { NextRequest, NextResponse } from 'next/server';
-import { RagService } from '@schologic/rag';
+// import { RagService } from '@schologic/rag'; // Converted to dynamic import
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -17,7 +16,22 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Message required" }, { status: 400 });
         }
 
-        const ragService = RagService.getInstance();
+        // Dynamic Import for defensive loading
+        // This helps catch module resolution errors that might otherwise cause 405/500 on Vercel
+        let ragService;
+        try {
+            const { RagService } = await import('@schologic/rag');
+            ragService = RagService.getInstance();
+            console.log("RagService initialized successfully");
+        } catch (initError: any) {
+            console.error("FATAL: Failed to initialize RagService:", initError);
+            return NextResponse.json({
+                error: "Service Initialization Failed",
+                details: initError.message || String(initError)
+            }, { status: 500 });
+        }
+
+        // 1. Search for relevant context
 
         // 1. Search for relevant context
         // We use a lower threshold for "support" - or strictly obey context. 
