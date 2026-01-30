@@ -1,17 +1,26 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
+@theme {
+  --font-sans: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-serif), ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-mono: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
 :root {
-  --background: #F8FAFC; /* Ice White */
-  --foreground: #1E293B; /* Slate 800 */
-  --primary: #4F46E5; /* Indigo 600 */
+  --background: #F8FAFC;
+  /* Ice White */
+  --foreground: #1E293B;
+  /* Slate 800 */
+  --primary: #4F46E5;
+  /* Indigo 600 */
   --primary-foreground: #FFFFFF;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -21,6 +30,7 @@ body {
     transform: translateX(100%);
     opacity: 0;
   }
+
   to {
     transform: translateX(0);
     opacity: 1;
@@ -28,8 +38,13 @@ body {
 }
 
 @keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .animate-slide-in {
@@ -48,8 +63,8 @@ body {
 }
 
 .glass-dark {
-  background: rgba(15, 23, 42, 0.6); /* Slate 900 with opacity */
+  background: rgba(15, 23, 42, 0.6);
+  /* Slate 900 with opacity */
   backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
-

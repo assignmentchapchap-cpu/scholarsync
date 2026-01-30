@@ -26,10 +26,10 @@ export default function Navbar({ onOpenDemo }: NavbarProps) {
                     <div className="bg-indigo-600 p-2 rounded-lg group-hover:bg-indigo-500 transition-colors">
                         <GraduationCap className="w-6 h-6 text-white" />
                     </div>
-                    <span className="font-bold text-xl text-white tracking-tight">Schologic LMS</span>
+                    <span className="font-serif font-bold text-xl text-white tracking-tight">Schologic LMS</span>
                 </Link>
 
-                <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-300">
+                <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-300 font-sans">
                     <a href="#features" className="hover:text-white transition-colors">Features</a>
                     <a href="#how-it-works" className="hover:text-white transition-colors">How it Works</a>
                     <a href="#pricing" className="hover:text-white transition-colors">Pricing</a>

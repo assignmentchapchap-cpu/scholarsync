@@ -1,9 +1,29 @@
 import type { Metadata } from "next";
+import { Inter, Merriweather, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-sans",
+  display: "swap",
+});
+
+const merriweather = Merriweather({
+  weight: ["300", "400", "700", "900"],
+  subsets: ["latin"],
+  variable: "--font-serif",
+  display: "swap",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
-  title: "Schologic LMS",
-  description: "AI-Powered Assignment Grading",
+  title: "Schologic LMS | The Sovereign Integrity Layer",
+  description: "The only open-weights LMS with Linguistic Forensic Analysis and Universal OER Ingestion.",
 };
 
 import { ToastProvider } from "@/context/ToastContext";
@@ -21,7 +41,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`font-sans antialiased overflow-x-hidden`}
+        className={`${inter.variable} ${merriweather.variable} ${jetbrainsMono.variable} font-sans antialiased overflow-x-hidden`}
         suppressHydrationWarning
       >
         <ToastProvider>
