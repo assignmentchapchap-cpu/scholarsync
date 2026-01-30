@@ -1,6 +1,7 @@
 'use client';
 
 import { Github, Twitter, Linkedin, GraduationCap, Shield, Server, Eye } from 'lucide-react';
+import Link from 'next/link';
 
 export default function Footer() {
     return (
@@ -73,14 +74,15 @@ export default function Footer() {
                             <li><a href="#" className="hover:text-indigo-400 transition-colors">Security Whitepaper</a></li>
                         </ul>
                     </div>
-
+                    {/* Column 2 */}
                     <div>
-                        <h4 className="font-bold text-slate-200 mb-4 text-sm">Company</h4>
+                        <h4 className="font-bold text-slate-200 mb-4 text-sm">Features</h4>
                         <ul className="space-y-2 text-slate-500 text-sm">
-                            <li><a href="#" className="hover:text-indigo-400 transition-colors">About Mission</a></li>
-                            <li><a href="#" className="hover:text-indigo-400 transition-colors">Careers</a></li>
-                            <li><a href="#" className="hover:text-indigo-400 transition-colors">Legal & Privacy</a></li>
-                            <li><a href="#" className="hover:text-indigo-400 transition-colors">Contact Sales</a></li>
+                            <li><Link href="/features/class-manager" className="hover:text-indigo-400 transition-colors">Class Manager</Link></li>
+                            <li><Link href="/features/ai-detection" className="hover:text-indigo-400 transition-colors">AI Detection</Link></li>
+                            <li><Link href="/features/ai-teaching-assistant" className="hover:text-indigo-400 transition-colors">AI Teaching Assistant</Link></li>
+                            <li><Link href="/features/universal-reader" className="hover:text-indigo-400 transition-colors">Universal Reader</Link></li>
+                            <li><Link href="/features/oer-library" className="hover:text-indigo-400 transition-colors">OER Library</Link></li>
                         </ul>
                     </div>
                 </div>

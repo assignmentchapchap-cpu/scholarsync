@@ -30,7 +30,7 @@ export default function Navbar({ onOpenDemo }: NavbarProps) {
                 </Link>
 
                 <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-300 font-sans">
-                    <a href="#features" className="hover:text-white transition-colors">Features</a>
+                    <Link href="/features" className="hover:text-white transition-colors">Features</Link>
                     <a href="#how-it-works" className="hover:text-white transition-colors">How it Works</a>
                     <a href="#pricing" className="hover:text-white transition-colors">Pricing</a>
                 </div>
