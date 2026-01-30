@@ -1,24 +1,22 @@
 'use client';
 
-import { ArrowRight, LucideIcon } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
-
+import { ReactNode } from 'react';
 
 interface FeatureCardProps {
     title: string;
     description: string;
-    icon: LucideIcon;
+    icon: ReactNode;
     href: string;
-    color?: string; // tailwind text color class, e.g. "text-blue-400"
     bgColor?: string; // tailwind bg color class, e.g. "bg-blue-400/10"
 }
 
 export function FeatureCard({
     title,
     description,
-    icon: Icon,
+    icon,
     href,
-    color = "text-indigo-400",
     bgColor = "bg-indigo-400/10"
 }: FeatureCardProps) {
     return (
@@ -27,7 +25,7 @@ export function FeatureCard({
             className="group relative flex flex-col p-8 rounded-3xl border border-slate-800 bg-slate-900/50 hover:bg-slate-800 hover:border-indigo-500/30 transition-all duration-300 overflow-hidden"
         >
             <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 ${bgColor}`}>
-                <Icon className={`w-7 h-7 ${color}`} />
+                {icon}
             </div>
 
             <h3 className="text-xl font-bold text-white mb-3 group-hover:text-indigo-300 transition-colors">

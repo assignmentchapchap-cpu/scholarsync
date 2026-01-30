@@ -2,7 +2,7 @@
 
 import { FeatureHero } from '@/components/features/FeatureHero';
 import UniversalReader from '@/components/landing/UniversalReader';
-import { FileText, BookOpen, Search, List, Sparkles, Box, FileType, CheckCircle } from 'lucide-react';
+import { FileText, BookOpen, Search, List, Sparkles, Archive, File, CheckCircle } from 'lucide-react';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -33,7 +33,7 @@ export default function UniversalReaderPage() {
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                         <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl text-center hover:border-blue-500/50 transition-colors group">
                             <div className="w-16 h-16 rounded-full bg-blue-500/10 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                                <FileType className="w-8 h-8 text-blue-400" />
+                                <File className="w-8 h-8 text-blue-400" />
                             </div>
                             <h3 className="text-white font-bold mb-1">PDF</h3>
                             <p className="text-sm text-slate-400">Native rendering with vector sharpness at any zoom level.</p>
@@ -47,7 +47,7 @@ export default function UniversalReaderPage() {
                         </div>
                         <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl text-center hover:border-blue-500/50 transition-colors group">
                             <div className="w-16 h-16 rounded-full bg-blue-500/10 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                                <Box className="w-8 h-8 text-blue-400" />
+                                <Archive className="w-8 h-8 text-blue-400" />
                             </div>
                             <h3 className="text-white font-bold mb-1">IMSCC</h3>
                             <p className="text-sm text-slate-400">Full Common Cartridge support for importing entire courses.</p>

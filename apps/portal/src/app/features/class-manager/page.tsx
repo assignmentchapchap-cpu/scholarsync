@@ -1,7 +1,7 @@
 
 
 import { FeatureHero } from '@/components/features/FeatureHero';
-import { CheckCircle, Users, Library, BarChart3, Clock, Share2 } from 'lucide-react';
+import { CheckCircle, Users, BookOpen, BarChart, Clock, Share2 } from 'lucide-react';
 import Image from 'next/image';
 import type { Metadata } from 'next';
 
@@ -23,12 +23,12 @@ const FEATURES = [
     {
         title: "Unified Resource Library",
         description: "Upload lecture notes, slides, and readings once. Share them across multiple classes or keep them private for future use.",
-        icon: Library
+        icon: BookOpen
     },
     {
         title: "Real-Time Tracking",
         description: "Monitor student engagement and submission status in real-time. Identify at-risk students before they fall behind.",
-        icon: BarChart3
+        icon: BarChart
     },
     {
         title: "Streamlined Grading",

@@ -33,41 +33,36 @@ export default function FeaturesPage() {
                         <FeatureCard
                             title="Class Manager"
                             description="The command center for your entire teaching workflow. effortless class creation, assignment tracking, and real-time student management."
-                            icon={Grid}
+                            icon={<Grid className="w-7 h-7 text-emerald-400" />}
                             href="/features/class-manager"
-                            color="text-emerald-400"
                             bgColor="bg-emerald-400/10"
                         />
                         <FeatureCard
                             title="AI Detection"
                             description="Industry-leading AI writing detection with transparent, evidence-based reporting. Analyze submissions for authenticity in seconds."
-                            icon={Shield}
+                            icon={<Shield className="w-7 h-7 text-rose-400" />}
                             href="/features/ai-detection"
-                            color="text-rose-400"
                             bgColor="bg-rose-400/10"
                         />
                         <FeatureCard
                             title="AI Teaching Assistant"
                             description="Your 24/7 grading partner. Generate balanced rubrics, get instant grading insights, and automate routine feedback."
-                            icon={Sparkles}
+                            icon={<Sparkles className="w-7 h-7 text-amber-400" />}
                             href="/features/ai-teaching-assistant"
-                            color="text-amber-400"
                             bgColor="bg-amber-400/10"
                         />
                         <FeatureCard
                             title="Universal Reader"
                             description="One viewer for everything. Read PDF, DOCX, and IMSCC content with built-in AI summarization and study tools."
-                            icon={BookOpen}
+                            icon={<BookOpen className="w-7 h-7 text-blue-400" />}
                             href="/features/universal-reader"
-                            color="text-blue-400"
                             bgColor="bg-blue-400/10"
                         />
                         <FeatureCard
                             title="OER Library"
                             description="Switch to Zero-Textbook-Cost courses instantly. Import peer-reviewed content from LibreTexts and OpenStax."
-                            icon={Archive}
+                            icon={<Archive className="w-7 h-7 text-indigo-400" />}
                             href="/features/oer-library"
-                            color="text-indigo-400"
                             bgColor="bg-indigo-400/10"
                         />
                     </FeatureGrid>

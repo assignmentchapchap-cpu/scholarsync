@@ -1,7 +1,7 @@
 
 
 import { FeatureHero } from '@/components/features/FeatureHero';
-import { Library, Upload, Download, CheckCircle, GraduationCap, DollarSign, Globe, ExternalLink } from 'lucide-react';
+import { BookOpen, Upload, Download, CheckCircle, GraduationCap, DollarSign, Globe, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 import type { Metadata } from 'next';
 
