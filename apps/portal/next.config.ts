@@ -7,8 +7,8 @@ const nextConfig: NextConfig = {
       bodySizeLimit: '6mb',
     },
   },
-  serverExternalPackages: ['pdf-parse', 'mammoth', 'xml2js', '@schologic/rag'],
-  transpilePackages: ['@schologic/ai-bridge', '@schologic/database', '@schologic/doc-engine'],
+  serverExternalPackages: ['pdf-parse', 'mammoth', 'xml2js', '@xenova/transformers'],
+  transpilePackages: ['@schologic/ai-bridge', '@schologic/database', '@schologic/doc-engine', '@schologic/rag'],
 };
 
 export default nextConfig;
