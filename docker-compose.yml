@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/apps/portal/node_modules
+    env_file:
+      - apps/portal/.env.local
+    environment:
+      - NODE_ENV=development
+    # Ensure pnpm is used to run the dev script defined in root package.json
+    # We must build the dependencies (packages) because they are referenced by 'main': 'dist/index.js'
+    # and the host environment doesn't have them built.
+    command: sh -c "pnpm turbo run build --filter='@schologic/portal^...' && pnpm dev"
