@@ -50,6 +50,32 @@ export const AITeachingAssistantFAQ = () => {
                             Yes. The Platform Copilot is trained on Schologic's entire documentation. You can ask it questions like "How do I set a late submission policy?" or "Where do I export grades to PDF?" to get instant, step-by-step navigation help.
                         </AccordionContent>
                     </AccordionItem>
+                    <AccordionItem value="item-5" className="border border-slate-800 rounded-lg bg-slate-950/50 px-4">
+                        <AccordionTrigger className="text-slate-200 hover:text-white hover:no-underline">
+                            What file types does the grading assistant support?
+                        </AccordionTrigger>
+                        <AccordionContent className="text-slate-400 leading-relaxed">
+                            Currently, the system is optimized for <strong>.txt</strong> (plain text) and <strong>.docx</strong> (Word documents). These formats allow for the most accurate text extraction and analysis. PDF support is in beta for text-based files.
+                        </AccordionContent>
+                    </AccordionItem>
+
+                    <AccordionItem value="item-6" className="border border-slate-800 rounded-lg bg-slate-950/50 px-4">
+                        <AccordionTrigger className="text-slate-200 hover:text-white hover:no-underline">
+                            Can I use my own existing rubrics?
+                        </AccordionTrigger>
+                        <AccordionContent className="text-slate-400 leading-relaxed">
+                            Absolutely. While the AI generator is a helpful accelerator, you can manually build rubrics or import them from previous classes. The Grading Assistant works identically whether the rubric was AI-generated or manually crafted.
+                        </AccordionContent>
+                    </AccordionItem>
+
+                    <AccordionItem value="item-7" className="border border-slate-800 rounded-lg bg-slate-950/50 px-4">
+                        <AccordionTrigger className="text-slate-200 hover:text-white hover:no-underline">
+                            What do students see when I return a grade?
+                        </AccordionTrigger>
+                        <AccordionContent className="text-slate-400 leading-relaxed">
+                            Students see the final numeric grade, the rubric breakdown (which criteria they met), and any specific written feedback you chose to include. They <strong>do not</strong> see the internal "AI Strength/Weakness" bullet points unless you explicitly copy them into the feedback field.
+                        </AccordionContent>
+                    </AccordionItem>
                 </Accordion>
 
                 <script
@@ -89,6 +115,30 @@ export const AITeachingAssistantFAQ = () => {
                                     'acceptedAnswer': {
                                         '@type': 'Answer',
                                         'text': 'Yes. The Platform Copilot is trained on Schologic\'s entire documentation. You can ask it questions like "How do I set a late submission policy?" or "Where do I export grades to PDF?" to get instant, step-by-step navigation help.'
+                                    }
+                                },
+                                {
+                                    '@type': 'Question',
+                                    'name': 'What file types does the grading assistant support?',
+                                    'acceptedAnswer': {
+                                        '@type': 'Answer',
+                                        'text': 'Currently, the system is optimized for .txt (plain text) and .docx (Word documents). These formats allow for the most accurate text extraction and analysis. PDF support is in beta for text-based files.'
+                                    }
+                                },
+                                {
+                                    '@type': 'Question',
+                                    'name': 'Can I use my own existing rubrics?',
+                                    'acceptedAnswer': {
+                                        '@type': 'Answer',
+                                        'text': 'Absolutely. While the AI generator is a helpful accelerator, you can manually build rubrics or import them from previous classes. The Grading Assistant works identically whether the rubric was AI-generated or manually crafted.'
+                                    }
+                                },
+                                {
+                                    '@type': 'Question',
+                                    'name': 'What do students see when I return a grade?',
+                                    'acceptedAnswer': {
+                                        '@type': 'Answer',
+                                        'text': 'Students see the final numeric grade, the rubric breakdown (which criteria they met), and any specific written feedback you chose to include. They do not see the internal "AI Strength/Weakness" bullet points unless you explicitly copy them into the feedback field.'
                                     }
                                 }
                             ]
