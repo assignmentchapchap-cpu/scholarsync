@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowRight, BookOpen, Shield, Users, Globe, UserCheck } from 'lucide-react';
+import { ArrowRight, BookOpen, Shield, Users, Globe, CheckCircle } from 'lucide-react';
 
 interface RelatedFeaturesProps {
     currentFeature: 'class-manager' | 'ai-detection' | 'ai-teaching-assistant' | 'universal-reader' | 'oer-library';
@@ -29,7 +29,7 @@ const FEATURES = {
     'ai-teaching-assistant': {
         title: 'AI Teaching Assistant',
         description: 'Automated grading and rubric alignment.',
-        icon: UserCheck,
+        icon: CheckCircle,
         href: '/features/ai-teaching-assistant',
         color: 'text-emerald-400',
         bg: 'bg-emerald-500/10',
