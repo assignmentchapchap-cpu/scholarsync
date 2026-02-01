@@ -140,7 +140,7 @@ export default function CollegesPage() {
             </div>
 
             {/* Section 3: Instructor Empowerment - Dark Theme for Contrast */}
-            <div className="bg-slate-900 py-24 relative overflow-hidden">
+            <div className="bg-slate-900 py-24 relative overflow-hidden bg-dot-white/20">
                 {/* Background Glow */}
                 <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-amber-500/10 rounded-full blur-[100px] pointer-events-none" />
 
@@ -252,7 +252,7 @@ export default function CollegesPage() {
             </div>
 
             {/* Section 5: Academic Integrity (CTA) - Gradient Background */}
-            <div className="bg-gradient-to-b from-amber-50 to-white py-24 text-center">
+            <div className="bg-gradient-to-b from-amber-50 to-white py-24 text-center bg-grid-amber-500/10">
                 <SectionGrid>
                     <GridColumn span={8} className="mx-auto">
                         <div className="w-20 h-20 bg-white rounded-3xl shadow-xl shadow-amber-900/5 flex items-center justify-center mx-auto mb-8 transform rotate-3">
