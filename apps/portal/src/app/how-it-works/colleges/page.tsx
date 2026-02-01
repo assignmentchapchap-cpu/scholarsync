@@ -1,5 +1,6 @@
 import { HowItWorksHero } from "@/components/how-it-works/HowItWorksHero";
 import { SectionGrid, GridColumn } from "@/components/how-it-works/SectionGrid";
+import { CollegesPilotCTA } from "@/components/how-it-works/colleges/CollegesPilotCTA";
 import { Maximize2, Layers, Users, TrendingUp, Shield, ArrowRight, CheckCircle } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -7,8 +8,17 @@ import { Metadata } from "next";
 
 export const metadata: Metadata = {
     title: "LMS for Colleges in Kenya | Hybrid Learning Platform | Schologic",
-    description: "The academic engine for colleges. Deliver full-time, evening, and distance programs through one unified hybrid learning platform.",
-    keywords: ["LMS for colleges Kenya", "hybrid learning platform", "multi-mode delivery", "distance education LMS", "academic integrity", "enrollment capacity"],
+    description: "Schologic is the lean academic engine for modern colleges in Kenya. Unify full-time, evening, and distance programs on one platform to maximize enrollment capacity, automate instructor grading with AI, and ensure academic integrity.",
+    keywords: [
+        "LMS for colleges Kenya",
+        "hybrid learning platform",
+        "online distance learning ODL",
+        "academic integrity software",
+        "AI grading for universities",
+        "enrollment capacity management",
+        "TVET LMS Kenya",
+        "Schologic for colleges"
+    ],
 };
 
 export default function CollegesPage() {
@@ -170,23 +180,53 @@ export default function CollegesPage() {
                             </div>
                         </div>
                     </GridColumn>
-                    <GridColumn span={6} className="order-1 md:order-2 flex items-center">
-                        <div className="pl-6">
-                            <h2 className="text-3xl md:text-5xl font-serif font-bold text-white mb-8">Zero Extra Work.</h2>
-                            <ul className="space-y-6">
-                                <li className="flex items-start gap-4">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-3 min-w-[6px]" />
-                                    <span className="text-lg text-slate-300"><strong>Automated Enrollment Sync:</strong> No manual data entry for add/drops.</span>
-                                </li>
-                                <li className="flex items-start gap-4">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-3 min-w-[6px]" />
-                                    <span className="text-lg text-slate-300"><strong>AI-Assisted Grading:</strong> Initial feedback generated automatically.</span>
-                                </li>
-                                <li className="flex items-start gap-4">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-3 min-w-[6px]" />
-                                    <span className="text-lg text-slate-300"><strong>Unified Attendance:</strong> Single view for in-person and online participation.</span>
-                                </li>
-                            </ul>
+                    <GridColumn span={6} className="order-1 md:order-2 flex items-center justify-center relative">
+                        {/* Laptop Mockup Container */}
+                        <div className="relative w-full max-w-lg perspective-1000">
+
+                            {/* Floating Feature Bubbles */}
+                            <div className="absolute -left-12 top-0 z-20 animate-float-slow hidden md:flex items-center gap-3 bg-white border-l-4 border-l-emerald-500 p-3 rounded-lg shadow-xl max-w-[200px]">
+                                <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center shrink-0">
+                                    <Users className="w-4 h-4 text-emerald-600" />
+                                </div>
+                                <div>
+                                    <div className="text-xs font-bold text-slate-900">Unified Attendance</div>
+                                    <div className="text-[10px] text-slate-500 leading-tight">Single view for all modes</div>
+                                </div>
+                            </div>
+
+                            <div className="absolute -right-8 bottom-20 z-20 animate-float-delayed hidden md:flex items-center gap-3 bg-white border-l-4 border-l-amber-500 p-3 rounded-lg shadow-xl max-w-[220px]">
+                                <div className="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center shrink-0">
+                                    <CheckCircle className="w-4 h-4 text-amber-600" />
+                                </div>
+                                <div>
+                                    <div className="text-xs font-bold text-slate-900">AI Grading</div>
+                                    <div className="text-[10px] text-slate-500 leading-tight">Instant initial feedback</div>
+                                </div>
+                            </div>
+
+                            <div className="absolute right-0 -top-12 z-20 animate-float hidden md:flex items-center gap-3 bg-white border-l-4 border-l-blue-500 p-3 rounded-lg shadow-xl max-w-[200px]">
+                                <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
+                                    <Layers className="w-4 h-4 text-blue-600" />
+                                </div>
+                                <div>
+                                    <div className="text-xs font-bold text-slate-900">Auto Sync</div>
+                                    <div className="text-[10px] text-slate-500 leading-tight">No manual data entry</div>
+                                </div>
+                            </div>
+
+                            {/* Laptop Base */}
+                            <div className="relative mx-auto border-gray-800 bg-gray-800 border-[8px] rounded-t-xl h-[250px] md:h-[300px] w-full max-w-[500px] shadow-2xl">
+                                <div className="rounded-lg overflow-hidden h-full w-full bg-slate-900 relative">
+                                    <Image
+                                        src="/images/colleges/instructor-dashboard.png"
+                                        alt="Schologic Instructor Dashboard - AI grading interface and unified attendance tracking for hybrid college classes"
+                                        fill
+                                        className="object-cover object-top"
+                                    />
+                                </div>
+                            </div>
+                            <div className="relative mx-auto bg-gray-900 rounded-b-xl rounded-t-sm h-[20px] max-w-[550px] md:w-[110%] -ml-[5%] shadow-xl"></div>
                         </div>
                     </GridColumn>
                 </SectionGrid>
@@ -263,9 +303,7 @@ export default function CollegesPage() {
                             Combat the perception that evening or online programs are less rigorous. Schologic integrates secure assessment tools, AI content detection, and digital proctoring into every course.
                         </p>
                         <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
-                            <button className="bg-amber-600 text-white px-10 py-4 rounded-full font-bold text-lg hover:bg-amber-700 transition-all transform hover:scale-105 shadow-xl shadow-amber-600/20 flex items-center gap-2">
-                                Launch Your Hybrid Campus <ArrowRight className="w-5 h-5" />
-                            </button>
+                            <CollegesPilotCTA />
                             <Link href="/features/ai-detection" className="text-slate-600 font-bold hover:text-amber-600 transition-colors flex items-center gap-2 text-lg">
                                 Explore Integrity Tools
                             </Link>
