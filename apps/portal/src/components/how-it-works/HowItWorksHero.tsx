@@ -9,9 +9,10 @@ interface HowItWorksHeroProps {
     label: string;
     accentColor: "rose" | "blue" | "emerald" | "amber" | "purple";
     visual?: React.ReactNode;
+    visualPosition?: "left" | "right";
 }
 
-export function HowItWorksHero({ title, subtitle, label, accentColor, visual }: HowItWorksHeroProps) {
+export function HowItWorksHero({ title, subtitle, label, accentColor, visual, visualPosition = "right" }: HowItWorksHeroProps) {
 
     const colorStyles = {
         rose: {
@@ -40,7 +41,13 @@ export function HowItWorksHero({ title, subtitle, label, accentColor, visual }: 
 
     return (
         <SectionGrid className="pt-32 pb-16">
-            <GridColumn span={visual ? 6 : 8} className={visual ? "md:pr-12" : "mx-auto text-center"}>
+            {visual && visualPosition === "left" && (
+                <GridColumn span={6} className="relative flex items-center justify-center md:justify-start mb-8 md:mb-0">
+                    {visual}
+                </GridColumn>
+            )}
+
+            <GridColumn span={visual ? 6 : 8} className={visual ? (visualPosition === "left" ? "md:pl-12" : "md:pr-12") : "mx-auto text-center"}>
                 <div className={cn("inline-flex items-center gap-2 px-3 py-1 rounded-full border text-xs font-bold uppercase tracking-wider mb-8", style.pill)}>
                     {label}
                 </div>
@@ -51,8 +58,9 @@ export function HowItWorksHero({ title, subtitle, label, accentColor, visual }: 
                     {subtitle}
                 </p>
             </GridColumn>
-            {visual && (
-                <GridColumn span={6} className="relative">
+
+            {visual && visualPosition === "right" && (
+                <GridColumn span={6} className="relative flex items-center justify-center md:justify-end mt-8 md:mt-0">
                     {visual}
                 </GridColumn>
             )}
