@@ -5,10 +5,11 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 
 interface NavbarProps {
-    onOpenDemo: () => void;
+    onOpenDemo?: () => void;
+    solid?: boolean;
 }
 
-export default function Navbar({ onOpenDemo }: NavbarProps) {
+export default function Navbar({ onOpenDemo, solid = false }: NavbarProps) {
     const [scrolled, setScrolled] = useState(false);
 
     useEffect(() => {
@@ -20,7 +21,7 @@ export default function Navbar({ onOpenDemo }: NavbarProps) {
     }, []);
 
     return (
-        <nav className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${scrolled ? 'bg-slate-900/80 backdrop-blur-md border-b border-slate-700 py-3' : 'bg-transparent py-6'}`}>
+        <nav className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${scrolled || solid ? 'bg-slate-900 border-b border-slate-700 py-3' : 'bg-transparent py-6'}`}>
             <div className="container mx-auto px-6 flex justify-between items-center">
                 <Link href="/" className="flex items-center gap-2 group">
                     <div className="bg-indigo-600 p-2 rounded-lg group-hover:bg-indigo-500 transition-colors">
@@ -31,7 +32,7 @@ export default function Navbar({ onOpenDemo }: NavbarProps) {
 
                 <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-300 font-sans">
                     <Link href="/features" className="hover:text-white transition-colors">Features</Link>
-                    <a href="#how-it-works" className="hover:text-white transition-colors">How it Works</a>
+                    <Link href="/how-it-works" className="hover:text-white transition-colors">How it Works</Link>
                     <a href="#pricing" className="hover:text-white transition-colors">Pricing</a>
                 </div>
 
