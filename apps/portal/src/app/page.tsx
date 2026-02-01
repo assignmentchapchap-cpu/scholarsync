@@ -5,7 +5,7 @@ import Navbar from '@/components/landing/Navbar';
 import Hero from '@/components/landing/Hero';
 import IntegrityHub from '@/components/landing/IntegrityHub';
 import UniversalReader from '@/components/landing/UniversalReader';
-import ApertusTA from '@/components/landing/ApertusTA';
+import SchologicTA from '@/components/landing/SchologicTA';
 import Footer from '@/components/landing/Footer';
 import DemoSignupModal from '@/components/auth/DemoSignupModal';
 import InstitutionalPilotModal from '@/components/leads/InstitutionalPilotModal';
@@ -32,7 +32,7 @@ export default function Home() {
       <UniversalReader />
 
       {/* Section 4: Faculty Retention */}
-      <ApertusTA />
+      <SchologicTA />
 
       {/* Final Institutional CTA */}
       <section className="py-24 bg-indigo-900 relative overflow-hidden border-t border-indigo-800">

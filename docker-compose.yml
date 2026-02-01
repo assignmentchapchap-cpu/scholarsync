@@ -13,6 +13,9 @@ services:
       - apps/portal/.env.local
     environment:
       - NODE_ENV=development
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     # Ensure pnpm is used to run the dev script defined in root package.json
     # We must build the dependencies (packages) because they are referenced by 'main': 'dist/index.js'
     # and the host environment doesn't have them built.

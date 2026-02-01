@@ -22,7 +22,7 @@ const FAQS = [
     },
     {
         question: "Can I customize AI detection for a specific class?",
-        answer: "Yes. In the Class Settings, you can toggle 'Override Global Defaults'. This allows you to choose specific models (like RoBERTa or PirateXX) and granularity settings just for that course."
+        answer: "Yes. In the Class Settings, you can toggle 'Override Global Defaults'. This allows you to choose specific models (like RoBERTa or AI Content Detector) and granularity settings just for that course."
     },
     {
         question: "What is the difference between Paragraph and Sentence granularity?",

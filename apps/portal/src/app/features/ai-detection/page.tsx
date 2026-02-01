@@ -7,10 +7,10 @@ import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
     title: 'AI Detection & Integrity | Schologic LMS',
-    description: 'Evidence-based academic integrity analysis using multi-model AI detection (RoBERTa, PirateXX) with granular transparency.',
+    description: 'Evidence-based academic integrity analysis using multi-model AI detection (RoBERTa) with granular transparency.',
     openGraph: {
         title: 'AI Detection & Integrity | Schologic LMS',
-        description: 'Evidence-based academic integrity analysis using multi-model AI detection (RoBERTa, PirateXX) with granular transparency.',
+        description: 'Evidence-based academic integrity analysis using multi-model AI detection (RoBERTa) with granular transparency.',
     },
     other: {
         'application/ld+json': JSON.stringify({
@@ -86,12 +86,12 @@ export default function AIDetectionPage() {
                                 Most detectors are "Black Boxes"—proprietary APIs that send your student data to 3rd-party servers where it may be stored or used for training.
                             </p>
                             <p className="mb-6">
-                                Schologic takes a different approach. We deploy <strong>Open-Weights Models</strong> (like RoBERTa and Apertus) directly within your institutional tenant.
+                                Schologic takes a different approach. We deploy <strong>Open-Weights Models</strong> (like RoBERTa) directly within your institutional tenant.
                             </p>
                             <ul className="space-y-3">
                                 <li className="flex items-start gap-3">
                                     <CheckCircle className="w-5 h-5 text-emerald-400 mt-1 shrink-0" />
-                                    <span><strong>Zero Data Leaks:</strong> Student essays never leave your secure infrastructure.</span>
+                                    <span><strong>Zero Data Leaks:</strong> Student essays never leave our secure infrastructure.</span>
                                 </li>
                                 <li className="flex items-start gap-3">
                                     <CheckCircle className="w-5 h-5 text-emerald-400 mt-1 shrink-0" />
@@ -104,34 +104,22 @@ export default function AIDetectionPage() {
                             </ul>
                         </div>
                     </div>
-                    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8">
-                        <div className="flex items-center gap-4 mb-6 pb-6 border-b border-slate-800">
-                            <div className="bg-white p-2 rounded-lg">
-                                <Github className="w-6 h-6 text-black" />
+                    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 flex flex-col justify-center h-full relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-[80px] group-hover:bg-emerald-500/20 transition-colors"></div>
+                        <div className="relative z-10">
+                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-800 border border-slate-700 text-slate-300 text-xs font-bold uppercase tracking-wider mb-6">
+                                <Shield className="w-3 h-3 text-emerald-400" />
+                                Why It Matters
                             </div>
-                            <div>
-                                <h4 className="font-bold text-white flex items-center gap-2">
-                                    Powered by Hugging Face
-                                    <ExternalLink className="w-3 h-3 text-slate-500" />
-                                </h4>
-                                <a href="https://huggingface.co/" target="_blank" rel="noopener noreferrer" className="text-xs text-indigo-400 hover:text-indigo-300 hover:underline">
-                                    View open weights library &rarr;
-                                </a>
-                            </div>
-                        </div>
-                        <div className="space-y-4">
-                            <div className="p-4 bg-slate-950 rounded border border-slate-800 flex justify-between items-center">
-                                <div className="text-sm text-slate-300 font-mono">roberta-base-openai-detector</div>
-                                <div className="text-xs px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded">Open Weights</div>
-                            </div>
-                            <div className="p-4 bg-slate-950 rounded border border-slate-800 flex justify-between items-center">
-                                <div className="text-sm text-slate-300 font-mono">hello-simpleai/chatgpt-detector</div>
-                                <div className="text-xs px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded">Open Weights</div>
-                            </div>
-                            <div className="p-4 bg-slate-950 rounded border border-slate-800 flex justify-between items-center">
-                                <div className="text-sm text-slate-300 font-mono">piratexx/ai-content-detector</div>
-                                <div className="text-xs px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded">Open Weights</div>
-                            </div>
+                            <h4 className="font-serif font-bold text-2xl text-white mb-4">
+                                Protecting the Value of a Degree.
+                            </h4>
+                            <p className="text-slate-400 leading-relaxed mb-6">
+                                Academic integrity isn't just about catching cheaters—it's about preserving the value of education. In an era of instant answers, ensuring that students engage with the material, think critically, and produce original work is more crucial than ever.
+                            </p>
+                            <p className="text-slate-400 leading-relaxed">
+                                AI detection helps maintain a level playing field, validates genuine student effort, and upholds the standards that give Schologic degrees their meaning.
+                            </p>
                         </div>
                     </div>
                 </div>

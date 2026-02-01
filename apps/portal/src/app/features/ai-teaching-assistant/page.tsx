@@ -1,5 +1,5 @@
 import { FeatureHero } from '@/components/features/FeatureHero';
-import ApertusTA from '@/components/landing/ApertusTA';
+import SchologicTA from '@/components/landing/SchologicTA';
 import { Sparkles, MessageSquare, List, TrendingUp, HelpCircle, Check, ArrowRight, Bot, Scale, FileText } from 'lucide-react';
 import Link from 'next/link';
 import type { Metadata } from 'next';
@@ -39,7 +39,7 @@ export default function AITeachingAssistantPage() {
                 description="Reduce grading time by 75% without sacrificing quality. Schologic TA drafts feedback, generates rubrics, and guides you through the portal."
                 label="AI Teaching Assistant"
                 align="center"
-                visual={<ApertusTA />}
+                visual={<SchologicTA />}
             />
 
             <div className="container mx-auto px-6">

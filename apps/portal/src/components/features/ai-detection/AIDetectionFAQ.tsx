@@ -18,7 +18,7 @@ const FAQS = [
     },
     {
         question: "Can Schologic detect content from newer models like Claude 3.5?",
-        answer: "Yes. Our 'AI Content Detector' (formerly PirateXX) is trained on a broader dataset that includes outputs from newer models like Claude, Gemini, and GPT-4. It is more aggressive and better suited for detecting content from these advanced LLMs."
+        answer: "Yes. Our 'AI Content Detector' is trained on a broader dataset that includes outputs from newer models like Claude, Gemini, and GPT-4. It is more aggressive and better suited for detecting content from these advanced LLMs."
     },
     {
         question: "What does 'Humanized' content mean?",

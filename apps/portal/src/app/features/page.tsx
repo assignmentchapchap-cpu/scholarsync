@@ -101,7 +101,7 @@ export default function FeaturesPage() {
                     <div className="space-y-6">
                         <div className="bg-slate-900/50 rounded-2xl p-6 border border-slate-800">
                             <h3 className="text-lg font-bold text-white mb-2">Is the AI detection accurate?</h3>
-                            <p className="text-slate-400">Our multi-model approach (RoBERTa, PirateXX) provides weighted probability scores, significantly reducing false positives compared to single-model detectors.</p>
+                            <p className="text-slate-400">Our multi-model approach (RoBERTa) provides weighted probability scores, significantly reducing false positives compared to single-model detectors.</p>
                         </div>
                         <div className="bg-slate-900/50 rounded-2xl p-6 border border-slate-800">
                             <h3 className="text-lg font-bold text-white mb-2">Can I import my existing courses?</h3>

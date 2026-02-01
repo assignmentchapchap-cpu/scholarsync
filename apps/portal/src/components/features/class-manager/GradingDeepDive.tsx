@@ -170,7 +170,7 @@ export function GradingDeepDive() {
                             </p>
                             <ul className="space-y-2 list-disc pl-5 text-sm">
                                 <li>
-                                    <strong className="text-slate-200">Model Selection:</strong> Choose between RoBERTa Large for broad academic writing or specialized models like PirateXX for detecting chat-based generation.
+                                    <strong className="text-slate-200">Model Selection:</strong> Choose between RoBERTa Large for broad academic writing or specialized models like AI Content Detector for detecting chat-based generation.
                                 </li>
                                 <li>
                                     <strong className="text-slate-200">Scan Granularity:</strong> Toggle between sentence-level analysis for quizzes or paragraph-level scanning for long-form essays.
