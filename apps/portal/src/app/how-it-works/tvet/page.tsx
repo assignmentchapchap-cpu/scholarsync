@@ -94,16 +94,16 @@ export default function TvetPage() {
                 <SectionGrid>
                     <GridColumn span={6} className="flex items-center">
                         <div className="prose prose-lg prose-slate pr-6">
-                            <h2 className="text-3xl font-serif font-bold text-slate-900 mb-4">Compliance & Capitation Made Simple.</h2>
+                            <h2 className="text-3xl font-serif font-bold text-slate-900 mb-4">The Faculty Force Multiplier.</h2>
                             <div className="text-slate-600 space-y-4">
                                 <p>
-                                    TVET administration is heavy on reporting—from <strong>Capitation returns</strong> to <strong>CDACC assessment records</strong>. Manual compilation is a liability.
+                                    Break the cycle of faculty exhaustion and administrative fatigue. Schologic acts as a strategic <strong>force multiplier</strong>, utilizing admin automation and bulk enrollment tools to help a single instructor manage massive student-to-staff ratios without losing the personal touch.
                                 </p>
                                 <p>
-                                    Schologic automates your compliance data. Generate attendance reports, competency matrices, and enrollment returns in one click, ensuring you never miss a government deadline.
+                                    By offloading routine "busy work" to our smart engine, your institution achieves <strong>instructional scaling</strong> that maintains high standards while directly reducing instructor burnout and operational friction.
                                 </p>
                                 <p>
-                                    Our robust <strong>TVET MIS architecture</strong> satisfies standard Quality Assurance inspections instantly, eliminating the panic of last-minute data preparation for government auditors and ensuring your institution remains compliant with evolving CDACC regulations.
+                                    Whether managing day classes, evening cohorts, or distance learners, faculty can now focus on what truly matters: <strong>teaching, mentoring, and developing competent graduates</strong> ready for the workforce.
                                 </p>
                             </div>
                             <div className="mt-8">
@@ -121,15 +121,15 @@ export default function TvetPage() {
                             <div className="w-14 h-14 bg-white shadow-sm border border-slate-100 rounded-2xl flex items-center justify-center mb-8">
                                 <Layers className="w-7 h-7 text-emerald-600" />
                             </div>
-                            <h3 className="text-2xl font-bold text-slate-900 mb-6">The Compliance Engine</h3>
+                            <h3 className="text-2xl font-bold text-slate-900 mb-6">Instructor Superpowers</h3>
                             <ul className="space-y-6">
                                 <li className="flex items-start gap-4">
                                     <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center shrink-0 mt-0.5">
                                         <CheckCircle className="w-5 h-5 text-emerald-600" />
                                     </div>
                                     <div>
-                                        <strong className="block text-slate-900 text-lg mb-1">Capitation Reporting</strong>
-                                        <p className="text-slate-600 leading-relaxed">Automated generation of student attendance and enrollment returns.</p>
+                                        <strong className="block text-slate-900 text-lg mb-1">Centralized Grading</strong>
+                                        <p className="text-slate-600 leading-relaxed">One unified gradebook for all cohorts. Grade once, update everywhere.</p>
                                     </div>
                                 </li>
                                 <li className="flex items-start gap-4">
@@ -137,8 +137,8 @@ export default function TvetPage() {
                                         <CheckCircle className="w-5 h-5 text-emerald-600" />
                                     </div>
                                     <div>
-                                        <strong className="block text-slate-900 text-lg mb-1">CDACC Matrices</strong>
-                                        <p className="text-slate-600 leading-relaxed">Digital gradebooks structured for competency-based assessment.</p>
+                                        <strong className="block text-slate-900 text-lg mb-1">AI Teaching Assistant</strong>
+                                        <p className="text-slate-600 leading-relaxed">Automated first-pass grading and instant student feedback powered by AI.</p>
                                     </div>
                                 </li>
                                 <li className="flex items-start gap-4">
@@ -146,8 +146,8 @@ export default function TvetPage() {
                                         <CheckCircle className="w-5 h-5 text-emerald-600" />
                                     </div>
                                     <div>
-                                        <strong className="block text-slate-900 text-lg mb-1">Audit Trails</strong>
-                                        <p className="text-slate-600 leading-relaxed">Every grade change and attendance record is logged and verifiable.</p>
+                                        <strong className="block text-slate-900 text-lg mb-1">Flexibility & Convenience</strong>
+                                        <p className="text-slate-600 leading-relaxed">Manage classes from anywhere. Mobile-friendly dashboards for on-the-go access.</p>
                                     </div>
                                 </li>
                             </ul>
