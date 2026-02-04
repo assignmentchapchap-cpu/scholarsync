@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { createClient } from '@schologic/database';
-import { TimelineConfig, TimelineEvent, TimelineWeek } from '@schologic/practicum-core';
-import { Calendar, Plus, Trash2, Save, X, AlertCircle, CheckCircle, Edit2, Filter, Eye, EyeOff } from 'lucide-react';
+import { TimelineConfig, TimelineEvent, TimelineWeek, generateTimeline } from '@schologic/practicum-core';
+import { Calendar, Plus, Trash2, Save, X, AlertCircle, CheckCircle, Edit2, Filter, Eye, EyeOff, RefreshCw } from 'lucide-react';
 import { useToast } from '@/context/ToastContext';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -11,9 +11,14 @@ interface TimelineEditorProps {
     practicumId: string;
     initialConfig: TimelineConfig;
     onUpdate?: (newConfig: TimelineConfig) => void;
+    // New props for regeneration
+    startDate: string;
+    endDate: string;
+    cohortTitle: string;
+    logInterval: 'daily' | 'weekly';
 }
 
-export default function TimelineEditor({ practicumId, initialConfig, onUpdate }: TimelineEditorProps) {
+export default function TimelineEditor({ practicumId, initialConfig, onUpdate, startDate, endDate, cohortTitle, logInterval }: TimelineEditorProps) {
     const supabase = createClient();
     const { showToast } = useToast();
 
@@ -23,11 +28,33 @@ export default function TimelineEditor({ practicumId, initialConfig, onUpdate }:
     const [editingEvent, setEditingEvent] = useState<TimelineEvent | null>(null);
     const [showLogs, setShowLogs] = useState(false);
 
+    const [showRegenerateConfirm, setShowRegenerateConfirm] = useState(false);
+
+    const handleRegenerate = () => {
+        setShowRegenerateConfirm(true);
+    };
+
+    const confirmRegenerate = () => {
+        try {
+            const newConfig = generateTimeline(startDate, endDate, logInterval, cohortTitle);
+            setConfig(newConfig);
+            showToast('Timeline regenerated with new defaults', 'success');
+        } catch (e) {
+            console.error(e);
+            showToast('Failed to regenerate timeline', 'error');
+        } finally {
+            setShowRegenerateConfirm(false);
+        }
+    };
+
+
     // Helpers
     const getEventsForWeek = (week: TimelineWeek) => {
         if (!config.events) return [];
         const start = new Date(week.start_date);
         const end = new Date(week.end_date);
+        // Ensure we cover the full end day
+        end.setHours(23, 59, 59, 999);
 
         return config.events.filter(e => {
             const d = new Date(e.date);
@@ -40,21 +67,67 @@ export default function TimelineEditor({ practicumId, initialConfig, onUpdate }:
         }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     };
 
-    const getFloatingEvents = () => {
-        // Events that don't fit in any generated week (e.g. far future or past)
-        if (config.weeks.length === 0) return config.events;
+    const getVisibleWeeks = () => {
+        if (!config.weeks) return [];
 
+        return config.weeks.filter(week => {
+            const events = getEventsForWeek(week);
+            return events.length > 0;
+        });
+    };
+
+    const getPreWeekEvents = () => {
+        if (config.weeks.length === 0) return [];
         const firstStart = new Date(config.weeks[0].start_date);
+
+        return config.events.filter(e => {
+            const d = new Date(e.date);
+            if (!showLogs && e.type === 'log') return false;
+            return d < firstStart;
+        }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    };
+
+    const getPostWeekEvents = () => {
+        if (config.weeks.length === 0) return config.events; // If no weeks, everything is here (or handled loosely)
         const lastEnd = new Date(config.weeks[config.weeks.length - 1].end_date);
 
         return config.events.filter(e => {
             const d = new Date(e.date);
-            // Filter check (even for floating events, though logs usually aren't floating)
             if (!showLogs && e.type === 'log') return false;
-
-            return d < firstStart || d > lastEnd;
-        });
+            return d > lastEnd;
+        }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     };
+
+    // Render helper for an event item
+    const renderEvent = (event: TimelineEvent) => (
+        <div key={event.id} className="group flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 hover:border-indigo-200 transition-all">
+            <div className="flex items-start gap-3">
+                <div className={`mt-1 w-2 h-2 rounded-full flex-shrink-0 ${event.type === 'report' ? 'bg-red-500' :
+                    event.type === 'log' ? 'bg-blue-500' :
+                        event.type === 'meeting' ? 'bg-purple-500' : 'bg-emerald-500'
+                    }`} />
+                <div>
+                    <p className="text-sm font-bold text-slate-800">{event.title}</p>
+                    {event.description && <p className="text-xs text-slate-500">{event.description}</p>}
+                    <p className="text-xs text-slate-400 mt-1">{new Date(event.date).toLocaleDateString()}</p>
+                </div>
+            </div>
+            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button
+                    onClick={() => setEditingEvent(event)}
+                    className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg"
+                >
+                    <Edit2 className="w-4 h-4" />
+                </button>
+                <button
+                    onClick={() => handleDeleteEvent(event.id)}
+                    className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
+                >
+                    <Trash2 className="w-4 h-4" />
+                </button>
+            </div>
+        </div>
+    );
 
     const handleSave = async () => {
         setLoading(true);
@@ -132,15 +205,21 @@ export default function TimelineEditor({ practicumId, initialConfig, onUpdate }:
                     <button
                         onClick={() => setShowLogs(!showLogs)}
                         className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-bold transition-colors border ${showLogs
-                                ? 'bg-blue-50 text-blue-600 border-blue-200'
-                                : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
+                            ? 'bg-blue-50 text-blue-600 border-blue-200'
+                            : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
                             }`}
                     >
                         {showLogs ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
                         {showLogs ? 'Hiding Logs' : 'Showing Logs'}
                         {!showLogs && hiddenLogCount > 0 && <span className="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded-full text-xs">{hiddenLogCount}</span>}
                     </button>
-
+                    <button
+                        onClick={handleRegenerate}
+                        className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 text-slate-500 rounded-lg text-sm font-bold hover:bg-slate-50 hover:text-emerald-600 transition-colors"
+                        title="Reset to defaults"
+                    >
+                        <RefreshCw className="w-4 h-4" />
+                    </button>
                     <button
                         onClick={handleAddEvent}
                         className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-bold hover:bg-slate-50 transition-colors"
@@ -160,45 +239,23 @@ export default function TimelineEditor({ practicumId, initialConfig, onUpdate }:
 
             <div className="p-6">
                 <div className="space-y-6">
-                    {/* Primary Milestones (Dates that don't fit in weeks) */}
-                    {getFloatingEvents().length > 0 && (
-                        <div className="relative pl-8 border-l-2 border-slate-100 pb-6 mb-6">
-                            <div className="absolute -left-2.5 top-0 w-5 h-5 rounded-full bg-indigo-100 border-2 border-white ring-1 ring-indigo-200 flex items-center justify-center">
-                                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+                    {/* Pre-Week Events (Early Milestones) */}
+                    {getPreWeekEvents().length > 0 && (
+                        <div className="relative pl-8 border-l-2 border-slate-100 pb-6 transition-all">
+                            <div className="absolute -left-2.5 top-0 w-5 h-5 rounded-full bg-slate-100 border-2 border-white ring-1 ring-slate-200 flex items-center justify-center">
+                                <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
                             </div>
-                            <h4 className="font-bold text-slate-800 mb-2 text-lg">Primary Milestones</h4>
+                            <div className="mb-2">
+                                <h4 className="font-bold text-slate-700">Pre-Practicum</h4>
+                            </div>
                             <div className="space-y-2">
-                                {getFloatingEvents().map(event => (
-                                    <div key={event.id} className="group flex items-center justify-between p-3 bg-indigo-50/50 rounded-xl border border-indigo-100 hover:border-indigo-200 transition-all">
-                                        <div className="flex items-start gap-3">
-                                            <div className="mt-1 w-2 h-2 rounded-full bg-indigo-500 flex-shrink-0" />
-                                            <div>
-                                                <p className="text-sm font-bold text-slate-800">{event.title}</p>
-                                                <p className="text-xs text-slate-400 mt-1">{new Date(event.date).toLocaleDateString()}</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button
-                                                onClick={() => setEditingEvent(event)}
-                                                className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg"
-                                            >
-                                                <Edit2 className="w-4 h-4" />
-                                            </button>
-                                            <button
-                                                onClick={() => handleDeleteEvent(event.id)}
-                                                className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
+                                {getPreWeekEvents().map(renderEvent)}
                             </div>
                         </div>
                     )}
 
-
-                    {config.weeks && config.weeks.length > 0 ? (config.weeks.map(week => (
+                    {/* Weekly Events */}
+                    {getVisibleWeeks().map(week => (
                         <div key={week.week_number} className="relative pl-8 border-l-2 border-slate-100 last:border-0 pb-6 transition-all">
                             <div className="absolute -left-2.5 top-0 w-5 h-5 rounded-full bg-slate-100 border-2 border-white ring-1 ring-slate-200 flex items-center justify-center">
                                 <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
@@ -214,87 +271,30 @@ export default function TimelineEditor({ practicumId, initialConfig, onUpdate }:
                             </div>
 
                             <div className="space-y-2 animate-fade-in">
-                                {getEventsForWeek(week).map(event => (
-                                    <div key={event.id} className="group flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 hover:border-indigo-200 transition-all">
-                                        <div className="flex items-start gap-3">
-                                            <div className={`mt-1 w-2 h-2 rounded-full flex-shrink-0 ${event.type === 'report' ? 'bg-red-500' :
-                                                event.type === 'log' ? 'bg-blue-500' : 'bg-emerald-500'
-                                                }`} />
-                                            <div>
-                                                <p className="text-sm font-bold text-slate-800">{event.title}</p>
-                                                {event.description && <p className="text-xs text-slate-500">{event.description}</p>}
-                                                <p className="text-xs text-slate-400 mt-1">{new Date(event.date).toLocaleDateString()}</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button
-                                                onClick={() => setEditingEvent(event)}
-                                                className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg"
-                                            >
-                                                <Edit2 className="w-4 h-4" />
-                                            </button>
-                                            <button
-                                                onClick={() => handleDeleteEvent(event.id)}
-                                                className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
-                                {getEventsForWeek(week).length === 0 && (
-                                    <p className="text-xs text-slate-400 italic pl-5">
-                                        {config.events.filter(e => {
-                                            const d = new Date(e.date);
-                                            return d >= new Date(week.start_date) && d <= new Date(week.end_date) && e.type === 'log';
-                                        }).length > 0 ? `${config.events.filter(e => {
-                                            const d = new Date(e.date);
-                                            return d >= new Date(week.start_date) && d <= new Date(week.end_date) && e.type === 'log';
-                                        }).length} logs hidden` : 'No events this week'}
-                                    </p>
-                                )}
+                                {getEventsForWeek(week).map(renderEvent)}
                             </div>
                         </div>
-                    ))) : (
-                        <div className="text-center py-8 text-slate-400">
-                            <p>No timeline weeks generated. Edit settings to regenerate.</p>
+                    ))}
+
+                    {/* Post-Week Events (Late Milestones) */}
+                    {getPostWeekEvents().length > 0 && (
+                        <div className="relative pl-8 border-l-2 border-slate-100 pb-6 border-transparent">
+                            <div className="absolute -left-2.5 top-0 w-5 h-5 rounded-full bg-slate-100 border-2 border-white ring-1 ring-slate-200 flex items-center justify-center">
+                                <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                            </div>
+                            <div className="mb-2">
+                                <h4 className="font-bold text-slate-700">Post-Practicum</h4>
+                            </div>
+                            <div className="space-y-2">
+                                {getPostWeekEvents().map(renderEvent)}
+                            </div>
                         </div>
                     )}
 
-                    {/* Primary Milestones (Previously Floating Events) */}
-                    {getFloatingEvents().length > 0 && (
-                        <div className="relative pl-8 border-l-2 border-slate-100 pb-6">
-                            <div className="absolute -left-2.5 top-0 w-5 h-5 rounded-full bg-indigo-100 border-2 border-white ring-1 ring-indigo-200 flex items-center justify-center">
-                                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
-                            </div>
-                            <h4 className="font-bold text-slate-800 mb-2 text-lg">Primary Milestones</h4>
-                            <div className="space-y-2">
-                                {getFloatingEvents().map(event => (
-                                    <div key={event.id} className="group flex items-center justify-between p-3 bg-indigo-50/50 rounded-xl border border-indigo-100 hover:border-indigo-200 transition-all">
-                                        <div className="flex items-start gap-3">
-                                            <div className="mt-1 w-2 h-2 rounded-full bg-indigo-500 flex-shrink-0" />
-                                            <div>
-                                                <p className="text-sm font-bold text-slate-800">{event.title}</p>
-                                                <p className="text-xs text-slate-400 mt-1">{new Date(event.date).toLocaleDateString()}</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button
-                                                onClick={() => setEditingEvent(event)}
-                                                className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg"
-                                            >
-                                                <Edit2 className="w-4 h-4" />
-                                            </button>
-                                            <button
-                                                onClick={() => handleDeleteEvent(event.id)}
-                                                className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
+                    {/* Empty State */}
+                    {getVisibleWeeks().length === 0 && getPreWeekEvents().length === 0 && getPostWeekEvents().length === 0 && (
+                        <div className="text-center py-8 text-slate-400">
+                            <p>No visible events. {hiddenLogCount > 0 ? 'Enable "Show Logs" to see log submissions.' : 'Add an event to get started.'}</p>
                         </div>
                     )}
                 </div>
@@ -380,6 +380,37 @@ export default function TimelineEditor({ practicumId, initialConfig, onUpdate }:
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Regeneration Confirmation Modal */}
+            {showRegenerateConfirm && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden p-6 text-center">
+                        <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <span className="animate-spin-slow"><RefreshCw className="w-6 h-6" /></span>
+                        </div>
+                        <h3 className="text-lg font-bold text-slate-900 mb-2">Reset Timeline?</h3>
+                        <p className="text-slate-500 text-sm mb-6">
+                            This will regenerate the entire timeline based on default settings. <br />
+                            <strong className="text-red-500">All custom events and edits will be lost.</strong>
+                        </p>
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setShowRegenerateConfirm(false)}
+                                className="flex-1 py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors text-sm"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={confirmRegenerate}
+                                className="flex-1 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-colors text-sm shadow-md shadow-emerald-200"
+                            >
+                                Yes, Reset It
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

@@ -122,8 +122,8 @@ function PracticumDetailsContent({ id }: { id: string }) {
     return (
         <div className="min-h-screen bg-slate-50 p-4 md:p-8">
             <div className="max-w-6xl mx-auto">
-                <Link href="/instructor/classes" className="flex items-center gap-2 text-slate-500 hover:text-slate-800 mb-6 transition-colors font-medium text-sm">
-                    <ArrowLeft className="w-4 h-4" /> <span className="hidden md:inline">Back to Classes</span>
+                <Link href="/instructor/practicums" className="flex items-center gap-2 text-slate-500 hover:text-slate-800 mb-6 transition-colors font-medium text-sm">
+                    <ArrowLeft className="w-4 h-4" /> <span className="hidden md:inline">Back to Practicums</span>
                 </Link>
 
                 {/* Header */}
@@ -254,7 +254,11 @@ function PracticumDetailsContent({ id }: { id: string }) {
                         <div className="md:col-span-2 lg:col-span-3">
                             <TimelineEditor
                                 practicumId={id}
-                                initialConfig={practicum.timeline as any} // Cast from Json
+                                initialConfig={practicum.timeline as any}
+                                startDate={practicum.start_date}
+                                endDate={practicum.end_date}
+                                cohortTitle={practicum.title}
+                                logInterval={practicum.log_interval as 'daily' | 'weekly'}
                             />
                         </div>
                     </div>
