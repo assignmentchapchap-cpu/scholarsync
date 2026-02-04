@@ -114,7 +114,7 @@ export default function NewPracticumPage() {
                 ? TEACHING_PRACTICE_OBSERVATION_GUIDE
                 : INDUSTRIAL_ATTACHMENT_OBSERVATION_GUIDE;
 
-            const { error } = await supabase.from('practicums').insert({
+            const { data, error } = await supabase.from('practicums').insert({
                 instructor_id: user.id,
                 title: formData.title.trim(),
                 cohort_code: generateCode('PC'),
@@ -124,20 +124,20 @@ export default function NewPracticumPage() {
                 log_interval: formData.logInterval,
                 log_template: formData.logTemplate,
                 custom_template: formData.logTemplate === 'custom' ? {} : null,
-                logs_rubric: LOGS_ASSESSMENT_RUBRIC,
-                supervisor_report_template: supervisorGuide,
-                student_report_template: PRACTICUM_REPORT_SCORE_SHEET,
+                logs_rubric: LOGS_ASSESSMENT_RUBRIC as any,
+                supervisor_report_template: supervisorGuide as any,
+                student_report_template: PRACTICUM_REPORT_SCORE_SHEET as any,
                 geolocation_required: formData.geolocationRequired,
                 final_report_required: formData.finalReportRequired,
                 auto_approve: formData.autoApprove,
                 grading_config: { logs_weight: 40, supervisor_weight: 50, report_weight: 60 },
                 timeline: {},
-            });
+            }).select().single();
 
             if (error) throw error;
 
             showToast('Practicum cohort created successfully!', 'success');
-            router.push('/instructor/classes');
+            router.push(`/instructor/practicum/${data.id}`);
         } catch (err) {
             console.error('Error creating practicum:', err);
             showToast('Failed to create practicum. Please try again.', 'error');
@@ -173,7 +173,7 @@ export default function NewPracticumPage() {
                             <div key={step.id} className="flex items-center">
                                 <div className={`flex items-center gap-2 ${isActive ? 'text-emerald-600' : isComplete ? 'text-emerald-500' : 'text-slate-400'}`}>
                                     <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isActive ? 'bg-emerald-100 text-emerald-600' :
-                                            isComplete ? 'bg-emerald-500 text-white' : 'bg-slate-100'
+                                        isComplete ? 'bg-emerald-500 text-white' : 'bg-slate-100'
                                         }`}>
                                         {isComplete ? <Check className="w-5 h-5" /> : <Icon className="w-5 h-5" />}
                                     </div>
@@ -255,8 +255,8 @@ export default function NewPracticumPage() {
                                             type="button"
                                             onClick={() => updateField('logTemplate', template.id as LogTemplateType)}
                                             className={`p-4 rounded-xl border-2 text-left transition-all ${formData.logTemplate === template.id
-                                                    ? 'border-emerald-500 bg-emerald-50'
-                                                    : 'border-slate-200 hover:border-slate-300'
+                                                ? 'border-emerald-500 bg-emerald-50'
+                                                : 'border-slate-200 hover:border-slate-300'
                                                 }`}
                                         >
                                             <p className="font-bold text-slate-900">{template.name}</p>
@@ -281,8 +281,8 @@ export default function NewPracticumPage() {
                                             type="button"
                                             onClick={() => updateField('logInterval', freq.id as LogInterval)}
                                             className={`flex-1 py-3 px-4 rounded-xl border-2 font-bold transition-all ${formData.logInterval === freq.id
-                                                    ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                                                    : 'border-slate-200 text-slate-600 hover:border-slate-300'
+                                                ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                                                : 'border-slate-200 text-slate-600 hover:border-slate-300'
                                                 }`}
                                         >
                                             {freq.name}

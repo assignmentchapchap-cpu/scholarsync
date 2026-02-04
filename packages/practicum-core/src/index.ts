@@ -13,6 +13,10 @@ export * from './rubrics/defaults';
 // Utilities
 export * from './utils/dates';
 export * from './utils/grading';
+export * from './utils/timeline';
+
+// Types
+export * from './types/timeline';
 
 // Validation Schemas
 export * from './schemas/validation';
