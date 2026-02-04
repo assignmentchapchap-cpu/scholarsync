@@ -14,8 +14,15 @@ type Enrollment = Database['public']['Tables']['practicum_enrollments']['Row'] &
     profiles: Database['public']['Tables']['profiles']['Row'] | null;
 };
 
-import { TimelineConfig } from "@schologic/practicum-core";
+import {
+    TimelineConfig,
+    LOGS_ASSESSMENT_RUBRIC,
+    TEACHING_PRACTICE_OBSERVATION_GUIDE,
+    INDUSTRIAL_ATTACHMENT_OBSERVATION_GUIDE,
+    PRACTICUM_REPORT_SCORE_SHEET
+} from "@schologic/practicum-core";
 import TimelineEditor from '@/components/instructor/TimelineEditor';
+import RubricsManager from '@/components/instructor/rubrics/RubricsManager';
 
 export default function PracticumDetailsPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
@@ -264,15 +271,20 @@ function PracticumDetailsContent({ id }: { id: string }) {
                     </div>
                 )}
 
-                {/* Rubrics Tab Stub */}
+                {/* Rubrics Tab */}
                 {activeTab === 'rubrics' && (
-                    <div className="bg-white p-12 rounded-3xl border border-slate-200 border-dashed text-center animate-fade-in">
-                        <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <Layers className="w-8 h-8 text-slate-300" />
-                        </div>
-                        <h3 className="text-lg font-bold text-slate-800 mb-2">Rubric Management</h3>
-                        <p className="text-slate-500 max-w-md mx-auto">Manage grading criteria for logs, supervisors, and final reports.</p>
-                        <p className="mt-4 text-xs font-mono bg-slate-100 inline-block px-2 py-1 rounded text-slate-500">Coming Soon</p>
+                    <div className="animate-fade-in">
+                        <RubricsManager
+                            practicumId={id}
+                            // Default to system standards if not customized in DB
+                            logsRubric={LOGS_ASSESSMENT_RUBRIC}
+                            supervisorRubric={
+                                practicum.log_template === 'industrial_attachment'
+                                    ? INDUSTRIAL_ATTACHMENT_OBSERVATION_GUIDE
+                                    : TEACHING_PRACTICE_OBSERVATION_GUIDE
+                            }
+                            reportRubric={PRACTICUM_REPORT_SCORE_SHEET}
+                        />
                     </div>
                 )}
 
