@@ -7,7 +7,9 @@ import {
     PracticumReportScoreSheet
 } from '@schologic/practicum-core';
 import { LogsRubricViewer, SupervisorRubricViewer, ReportRubricViewer } from './RubricViewers';
-import { List, Users, FileText, Settings } from 'lucide-react';
+import { LogsRubricEditor, SupervisorRubricEditor, ReportRubricEditor } from './RubricEditors';
+import { updatePracticumRubric } from '@/app/actions/practicum';
+import { List, Users, FileText } from 'lucide-react';
 
 interface RubricsManagerProps {
     practicumId: string;
@@ -21,11 +23,17 @@ type Tab = 'logs' | 'supervisor' | 'report';
 
 export default function RubricsManager({
     practicumId,
-    logsRubric,
-    supervisorRubric,
-    reportRubric
+    logsRubric: initialLogsRubric,
+    supervisorRubric: initialSupervisorRubric,
+    reportRubric: initialReportRubric
 }: RubricsManagerProps) {
     const [activeTab, setActiveTab] = useState<Tab>('logs');
+    const [isEditing, setIsEditing] = useState(false);
+
+    // Local state for rubrics to support editing
+    const [logsRubric, setLogsRubric] = useState(initialLogsRubric);
+    const [supervisorRubric, setSupervisorRubric] = useState(initialSupervisorRubric);
+    const [reportRubric, setReportRubric] = useState(initialReportRubric);
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -78,21 +86,69 @@ export default function RubricsManager({
                         </p>
                     </div>
                 </button>
-
-                <div className="pt-4 border-t border-slate-100">
-                    <p className="px-3 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Configuration</p>
-                    <button className="w-full flex items-center gap-3 p-3 rounded-xl text-sm font-bold text-slate-400 cursor-not-allowed bg-slate-50 opacity-50">
-                        <Settings className="w-5 h-5" />
-                        Settings & Weights
-                    </button>
-                </div>
             </div>
 
             {/* Content Area */}
             <div className="lg:col-span-3">
-                {activeTab === 'logs' && <LogsRubricViewer rubric={logsRubric} />}
-                {activeTab === 'supervisor' && <SupervisorRubricViewer rubric={supervisorRubric} />}
-                {activeTab === 'report' && <ReportRubricViewer rubric={reportRubric} />}
+                {activeTab === 'logs' && (
+                    isEditing
+                        ? <LogsRubricEditor
+                            initialRubric={logsRubric}
+                            onSave={async (newRubric) => {
+                                setLogsRubric(newRubric);
+                                setIsEditing(false);
+                                try {
+                                    const result = await updatePracticumRubric(practicumId, 'logs', newRubric);
+                                    if (!result.success) throw new Error(result.error);
+                                } catch (err) {
+                                    console.error("Failed to save logs rubric", err);
+                                    alert("Falied to save changes to server.");
+                                }
+                            }}
+                            onCancel={() => setIsEditing(false)}
+                        />
+                        : <LogsRubricViewer rubric={logsRubric} onEdit={() => setIsEditing(true)} />
+                )}
+
+                {activeTab === 'supervisor' && (
+                    isEditing
+                        ? <SupervisorRubricEditor
+                            initialRubric={supervisorRubric}
+                            onSave={async (newRubric) => {
+                                setSupervisorRubric(newRubric);
+                                setIsEditing(false);
+                                try {
+                                    const result = await updatePracticumRubric(practicumId, 'supervisor', newRubric);
+                                    if (!result.success) throw new Error(result.error);
+                                } catch (err) {
+                                    console.error("Failed to save supervisor rubric", err);
+                                    alert("Falied to save changes to server.");
+                                }
+                            }}
+                            onCancel={() => setIsEditing(false)}
+                        />
+                        : <SupervisorRubricViewer rubric={supervisorRubric} onEdit={() => setIsEditing(true)} />
+                )}
+
+                {activeTab === 'report' && (
+                    isEditing
+                        ? <ReportRubricEditor
+                            initialRubric={reportRubric}
+                            onSave={async (newRubric) => {
+                                setReportRubric(newRubric);
+                                setIsEditing(false);
+                                try {
+                                    const result = await updatePracticumRubric(practicumId, 'report', newRubric);
+                                    if (!result.success) throw new Error(result.error);
+                                } catch (err) {
+                                    console.error("Failed to save report rubric", err);
+                                    alert("Falied to save changes to server.");
+                                }
+                            }}
+                            onCancel={() => setIsEditing(false)}
+                        />
+                        : <ReportRubricViewer rubric={reportRubric} onEdit={() => setIsEditing(true)} />
+                )}
             </div>
         </div>
     );

@@ -277,13 +277,14 @@ function PracticumDetailsContent({ id }: { id: string }) {
                         <RubricsManager
                             practicumId={id}
                             // Default to system standards if not customized in DB
-                            logsRubric={LOGS_ASSESSMENT_RUBRIC}
+                            logsRubric={(practicum.logs_rubric as any) || LOGS_ASSESSMENT_RUBRIC}
                             supervisorRubric={
-                                practicum.log_template === 'industrial_attachment'
+                                (practicum.supervisor_report_template as any) ||
+                                (practicum.log_template === 'industrial_attachment'
                                     ? INDUSTRIAL_ATTACHMENT_OBSERVATION_GUIDE
-                                    : TEACHING_PRACTICE_OBSERVATION_GUIDE
+                                    : TEACHING_PRACTICE_OBSERVATION_GUIDE)
                             }
-                            reportRubric={PRACTICUM_REPORT_SCORE_SHEET}
+                            reportRubric={(practicum.student_report_template as any) || PRACTICUM_REPORT_SCORE_SHEET}
                         />
                     </div>
                 )}

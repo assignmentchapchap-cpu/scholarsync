@@ -8,10 +8,10 @@ import {
     ObservationAttribute,
     ReportSection
 } from '@schologic/practicum-core';
-import { CheckCircle2, AlertCircle, FileText, Check } from 'lucide-react';
+import { CheckCircle2, AlertCircle, FileText, Check, Pen } from 'lucide-react';
 
 // --- Logs Assessment Viewer ---
-export function LogsRubricViewer({ rubric }: { rubric: RubricConfig }) {
+export function LogsRubricViewer({ rubric, onEdit }: { rubric: RubricConfig, onEdit?: () => void }) {
     const [viewMode, setViewMode] = useState<'list' | 'matrix'>('list');
 
     if (!rubric) return <EmptyState label="Logs Rubric" />;
@@ -24,6 +24,15 @@ export function LogsRubricViewer({ rubric }: { rubric: RubricConfig }) {
                     <p className="text-emerald-700 text-sm">Total Marks: {rubric.total_marks}</p>
                 </div>
                 <div className="flex items-center gap-2">
+                    {onEdit && (
+                        <button
+                            onClick={onEdit}
+                            className="p-2 text-emerald-600 hover:bg-emerald-100 rounded-lg transition-colors border border-transparent hover:border-emerald-200"
+                            title="Edit Template"
+                        >
+                            <Pen className="w-5 h-5" />
+                        </button>
+                    )}
                     <div className="bg-white p-1 rounded-lg shadow-sm border border-emerald-100 flex text-sm">
                         <button
                             onClick={() => setViewMode('list')}
@@ -126,7 +135,7 @@ export function LogsRubricViewer({ rubric }: { rubric: RubricConfig }) {
 }
 
 // --- Supervisor Assessment Viewer ---
-export function SupervisorRubricViewer({ rubric }: { rubric: PracticumObservationGuide }) {
+export function SupervisorRubricViewer({ rubric, onEdit }: { rubric: PracticumObservationGuide, onEdit?: () => void }) {
     const [viewMode, setViewMode] = useState<'list' | 'matrix'>('list');
 
     if (!rubric) return <EmptyState label="Supervisor Guide" />;
@@ -139,6 +148,15 @@ export function SupervisorRubricViewer({ rubric }: { rubric: PracticumObservatio
                     <p className="text-emerald-700 text-sm">Total Score: {rubric.total_score}</p>
                 </div>
                 <div className="flex items-center gap-2">
+                    {onEdit && (
+                        <button
+                            onClick={onEdit}
+                            className="p-2 text-emerald-600 hover:bg-emerald-100 rounded-lg transition-colors border border-transparent hover:border-emerald-200"
+                            title="Edit Template"
+                        >
+                            <Pen className="w-5 h-5" />
+                        </button>
+                    )}
                     <div className="bg-white p-1 rounded-lg shadow-sm border border-emerald-100 flex text-sm">
                         <button
                             onClick={() => setViewMode('list')}
@@ -258,7 +276,7 @@ export function SupervisorRubricViewer({ rubric }: { rubric: PracticumObservatio
 }
 
 // --- Final Report Viewer ---
-export function ReportRubricViewer({ rubric }: { rubric: PracticumReportScoreSheet }) {
+export function ReportRubricViewer({ rubric, onEdit }: { rubric: PracticumReportScoreSheet, onEdit?: () => void }) {
     const [viewMode, setViewMode] = useState<'list' | 'matrix'>('list');
 
     if (!rubric) return <EmptyState label="Report Score Sheet" />;
@@ -271,6 +289,15 @@ export function ReportRubricViewer({ rubric }: { rubric: PracticumReportScoreShe
                     <p className="text-emerald-700 text-sm">Total Marks: {rubric.total_report_marks}%</p>
                 </div>
                 <div className="flex items-center gap-2">
+                    {onEdit && (
+                        <button
+                            onClick={onEdit}
+                            className="p-2 text-emerald-600 hover:bg-emerald-100 rounded-lg transition-colors border border-transparent hover:border-emerald-200"
+                            title="Edit Template"
+                        >
+                            <Pen className="w-5 h-5" />
+                        </button>
+                    )}
                     <div className="bg-white p-1 rounded-lg shadow-sm border border-emerald-100 flex text-sm">
                         <button
                             onClick={() => setViewMode('list')}
@@ -421,5 +448,3 @@ function EmptyState({ label }: { label: string }) {
         </div>
     );
 }
-
-
