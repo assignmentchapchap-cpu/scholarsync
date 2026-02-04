@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, use, useEffect, useState } from 'react';
+import { Suspense, use, useEffect, useState, useCallback } from 'react';
 import { createClient } from "@schologic/database";
 import { useToast } from '@/context/ToastContext';
 import { ArrowLeft, Edit, ChevronUp, ChevronDown, Check, Copy, Calendar, Users, FileText, Clock, ArrowUpRight, BookOpen, Layers, Award } from 'lucide-react';
@@ -23,6 +23,8 @@ import {
 } from "@schologic/practicum-core";
 import TimelineEditor from '@/components/instructor/TimelineEditor';
 import RubricsManager from '@/components/instructor/rubrics/RubricsManager';
+import ConfirmDialog from '@/components/ConfirmDialog';
+import { useNavigationGuard } from '@/context/NavigationGuardContext';
 
 export default function PracticumDetailsPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
@@ -36,7 +38,80 @@ function PracticumDetailsContent({ id }: { id: string }) {
     const { showToast } = useToast();
 
     const initialTab = searchParams.get('tab') as 'overview' | 'rubrics' | 'resources' | 'submissions' | 'grades' || 'overview';
-    const [activeTab, setActiveTab] = useState(initialTab);
+    const [activeTab, setActiveTabState] = useState(initialTab);
+    const [isRubricDirty, setIsRubricDirty] = useState(false);
+    const [isTimelineDirty, setIsTimelineDirty] = useState(false);
+    const { blockNavigation, allowNavigation } = useNavigationGuard();
+
+    // Internal Dialog State
+    const [showConfirm, setShowConfirm] = useState(false);
+    const [pendingTab, setPendingTab] = useState<(typeof activeTab) | null>(null);
+
+    // Consolidated dirty check
+    const isDirty = (tab: string) => {
+        if (tab === 'rubrics') return isRubricDirty;
+        if (tab === 'overview') return isTimelineDirty; // Timeline is in overview
+        return false;
+    };
+
+    const handleDirtyChange = (key: 'rubrics' | 'overview', dirty: boolean) => {
+        if (key === 'rubrics') setIsRubricDirty(dirty);
+        if (key === 'overview') setIsTimelineDirty(dirty);
+
+        if (dirty) {
+            blockNavigation('main-tabs', 'You have unsaved changes. Are you sure you want to leave?');
+        } else {
+            // Only allow if the other one is also clean (simplified for now as usually one edits one thing)
+            // Better: check both
+            if ((key === 'rubrics' && !isTimelineDirty) || (key === 'overview' && !isRubricDirty)) {
+                allowNavigation('main-tabs');
+            }
+        }
+    };
+
+    // Callback to update local state when children save
+    const handleTimelineUpdate = (newConfig: any) => {
+        if (!practicum) return;
+        setPracticum({ ...practicum, timeline: newConfig });
+        setIsTimelineDirty(false);
+        // We might need to keep navigation blocked if rubrics are dirty, but for timeline we are good.
+        if (!isRubricDirty) allowNavigation('main-tabs');
+    };
+
+    // Callback for Rubric updates
+    const handleRubricsUpdate = (type: 'logs' | 'supervisor' | 'report', newRubric: any) => {
+        if (!practicum) return;
+        const keyMap = {
+            'logs': 'logs_rubric',
+            'supervisor': 'supervisor_report_template',
+            'report': 'student_report_template'
+        };
+        setPracticum({ ...practicum, [keyMap[type]]: newRubric });
+        // Dirty state is managed via onDirtyStateChange callback from manager
+    };
+
+    // Guarded Tab Switch
+    const setActiveTab = (tab: typeof activeTab) => {
+        // Check if CURRENT tab is dirty
+        if (isDirty(activeTab)) {
+            setPendingTab(tab);
+            setShowConfirm(true);
+            return;
+        }
+        setActiveTabState(tab);
+    };
+
+    const confirmTabChange = () => {
+        if (pendingTab) {
+            // Force clean state logic if needed, but components should handle cleanup on unmount or we just switch
+            // Ideally we tell the child to revert, but here we just switch away
+            setIsRubricDirty(false);
+            setIsTimelineDirty(false);
+            allowNavigation('main-tabs');
+            setActiveTabState(pendingTab);
+        }
+        setShowConfirm(false);
+    };
 
     // Data States
     const [practicum, setPracticum] = useState<PracticumData | null>(null);
@@ -266,6 +341,8 @@ function PracticumDetailsContent({ id }: { id: string }) {
                                 endDate={practicum.end_date}
                                 cohortTitle={practicum.title}
                                 logInterval={practicum.log_interval as 'daily' | 'weekly'}
+                                onDirtyChange={(dirty) => handleDirtyChange('overview', dirty)}
+                                onUpdate={handleTimelineUpdate}
                             />
                         </div>
                     </div>
@@ -285,6 +362,8 @@ function PracticumDetailsContent({ id }: { id: string }) {
                                     : TEACHING_PRACTICE_OBSERVATION_GUIDE)
                             }
                             reportRubric={(practicum.student_report_template as any) || PRACTICUM_REPORT_SCORE_SHEET}
+                            onDirtyStateChange={(dirty) => handleDirtyChange('rubrics', dirty)}
+                            onUpdate={handleRubricsUpdate}
                         />
                     </div>
                 )}
@@ -324,8 +403,17 @@ function PracticumDetailsContent({ id }: { id: string }) {
                         <p className="mt-4 text-xs font-mono bg-slate-100 inline-block px-2 py-1 rounded text-slate-500">Coming Soon</p>
                     </div>
                 )}
-
             </div>
-        </div>
+            <ConfirmDialog
+                isOpen={showConfirm}
+                title="Unsaved Changes"
+                message="You have unsaved changes in this tab. Switching tabs will verify or discard them."
+                strConfirm="Discard Changes"
+                strCancel="Stay Here"
+                variant="danger"
+                onConfirm={confirmTabChange}
+                onCancel={() => setShowConfirm(false)}
+            />
+        </div >
     );
 }

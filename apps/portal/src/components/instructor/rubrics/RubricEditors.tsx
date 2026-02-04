@@ -17,16 +17,25 @@ interface LogsRubricEditorProps {
     initialRubric: RubricConfig;
     onSave: (rubric: RubricConfig) => void;
     onCancel: () => void;
+    onDirtyChange?: (isDirty: boolean) => void;
 }
 
-export function LogsRubricEditor({ initialRubric, onSave, onCancel }: LogsRubricEditorProps) {
+export function LogsRubricEditor({ initialRubric, onSave, onCancel, onDirtyChange }: LogsRubricEditorProps) {
     // Deep clone to prevent state leaking to other cohorts (mutation of global constants)
     const [rubric, setRubric] = useState<RubricConfig>(() => JSON.parse(JSON.stringify(initialRubric)));
     const [isDirty, setIsDirty] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+
+    // Sync from prop updates (e.g. after save)
+    useEffect(() => {
+        setRubric(JSON.parse(JSON.stringify(initialRubric)));
+    }, [initialRubric]);
 
     useEffect(() => {
-        setIsDirty(JSON.stringify(initialRubric) !== JSON.stringify(rubric));
-    }, [rubric, initialRubric]);
+        const dirty = JSON.stringify(initialRubric) !== JSON.stringify(rubric);
+        setIsDirty(dirty);
+        if (onDirtyChange) onDirtyChange(dirty);
+    }, [rubric, initialRubric]); // Removed onDirtyChange to prevent loop
 
     const handleCancel = () => {
         if (!isDirty || window.confirm("You have unsaved changes. Are you sure you want to discard them?")) {
@@ -124,12 +133,24 @@ export function LogsRubricEditor({ initialRubric, onSave, onCancel }: LogsRubric
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
-                    <button onClick={handleCancel} className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg">
+                    <button onClick={handleCancel} disabled={isSaving} className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg disabled:opacity-50">
                         <X className="w-5 h-5" />
                     </button>
-                    <button onClick={() => onSave(rubric)} className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-medium text-sm shadow-sm transition-colors">
-                        <Save className="w-4 h-4" />
-                        Save Changes
+                    <button
+                        onClick={async () => {
+                            setIsSaving(true);
+                            await onSave(rubric);
+                            setIsSaving(false);
+                        }}
+                        disabled={isSaving}
+                        className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-medium text-sm shadow-sm transition-all disabled:opacity-80 disabled:cursor-wait"
+                    >
+                        {isSaving ? (
+                            <RotateCcw className="w-4 h-4 animate-spin" />
+                        ) : (
+                            <Save className="w-4 h-4" />
+                        )}
+                        {isSaving ? 'Saving...' : 'Save Changes'}
                     </button>
                 </div>
             </div>
@@ -254,16 +275,25 @@ interface SupervisorRubricEditorProps {
     initialRubric: PracticumObservationGuide;
     onSave: (rubric: PracticumObservationGuide) => void;
     onCancel: () => void;
+    onDirtyChange?: (isDirty: boolean) => void;
 }
 
-export function SupervisorRubricEditor({ initialRubric, onSave, onCancel }: SupervisorRubricEditorProps) {
+export function SupervisorRubricEditor({ initialRubric, onSave, onCancel, onDirtyChange }: SupervisorRubricEditorProps) {
     // Deep clone to prevent state leaking
     const [rubric, setRubric] = useState<PracticumObservationGuide>(() => JSON.parse(JSON.stringify(initialRubric)));
     const [isDirty, setIsDirty] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+
+    // Sync from prop updates
+    useEffect(() => {
+        setRubric(JSON.parse(JSON.stringify(initialRubric)));
+    }, [initialRubric]);
 
     useEffect(() => {
-        setIsDirty(JSON.stringify(initialRubric) !== JSON.stringify(rubric));
-    }, [rubric, initialRubric]);
+        const dirty = JSON.stringify(initialRubric) !== JSON.stringify(rubric);
+        setIsDirty(dirty);
+        if (onDirtyChange) onDirtyChange(dirty);
+    }, [rubric, initialRubric]); // Removed onDirtyChange to prevent loop
 
     const handleCancel = () => {
         if (!isDirty || window.confirm("You have unsaved changes. Are you sure you want to discard them?")) {
@@ -353,12 +383,24 @@ export function SupervisorRubricEditor({ initialRubric, onSave, onCancel }: Supe
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
-                    <button onClick={handleCancel} className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg">
+                    <button onClick={handleCancel} disabled={isSaving} className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg disabled:opacity-50">
                         <X className="w-5 h-5" />
                     </button>
-                    <button onClick={() => onSave(rubric)} className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-medium text-sm shadow-sm transition-colors">
-                        <Save className="w-4 h-4" />
-                        Save Changes
+                    <button
+                        onClick={async () => {
+                            setIsSaving(true);
+                            await onSave(rubric);
+                            setIsSaving(false);
+                        }}
+                        disabled={isSaving}
+                        className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-medium text-sm shadow-sm transition-all disabled:opacity-80 disabled:cursor-wait"
+                    >
+                        {isSaving ? (
+                            <RotateCcw className="w-4 h-4 animate-spin" />
+                        ) : (
+                            <Save className="w-4 h-4" />
+                        )}
+                        {isSaving ? 'Saving...' : 'Save Changes'}
                     </button>
                 </div>
             </div>
@@ -461,16 +503,25 @@ interface ReportRubricEditorProps {
     initialRubric: PracticumReportScoreSheet;
     onSave: (rubric: PracticumReportScoreSheet) => void;
     onCancel: () => void;
+    onDirtyChange?: (isDirty: boolean) => void;
 }
 
-export function ReportRubricEditor({ initialRubric, onSave, onCancel }: ReportRubricEditorProps) {
+export function ReportRubricEditor({ initialRubric, onSave, onCancel, onDirtyChange }: ReportRubricEditorProps) {
     // Deep clone to prevent state leaking
     const [rubric, setRubric] = useState<PracticumReportScoreSheet>(() => JSON.parse(JSON.stringify(initialRubric)));
     const [isDirty, setIsDirty] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+
+    // Sync from prop updates
+    useEffect(() => {
+        setRubric(JSON.parse(JSON.stringify(initialRubric)));
+    }, [initialRubric]);
 
     useEffect(() => {
-        setIsDirty(JSON.stringify(initialRubric) !== JSON.stringify(rubric));
-    }, [rubric, initialRubric]);
+        const dirty = JSON.stringify(initialRubric) !== JSON.stringify(rubric);
+        setIsDirty(dirty);
+        if (onDirtyChange) onDirtyChange(dirty);
+    }, [rubric, initialRubric]); // Removed onDirtyChange to prevent loop
 
     const handleCancel = () => {
         if (!isDirty || window.confirm("You have unsaved changes. Are you sure you want to discard them?")) {
@@ -578,12 +629,24 @@ export function ReportRubricEditor({ initialRubric, onSave, onCancel }: ReportRu
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
-                    <button onClick={handleCancel} className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg">
+                    <button onClick={handleCancel} disabled={isSaving} className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg disabled:opacity-50">
                         <X className="w-5 h-5" />
                     </button>
-                    <button onClick={() => onSave(rubric)} className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-medium text-sm shadow-sm transition-colors">
-                        <Save className="w-4 h-4" />
-                        Save Changes
+                    <button
+                        onClick={async () => {
+                            setIsSaving(true);
+                            await onSave(rubric);
+                            setIsSaving(false);
+                        }}
+                        disabled={isSaving}
+                        className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-medium text-sm shadow-sm transition-all disabled:opacity-80 disabled:cursor-wait"
+                    >
+                        {isSaving ? (
+                            <RotateCcw className="w-4 h-4 animate-spin" />
+                        ) : (
+                            <Save className="w-4 h-4" />
+                        )}
+                        {isSaving ? 'Saving...' : 'Save Changes'}
                     </button>
                 </div>
             </div>

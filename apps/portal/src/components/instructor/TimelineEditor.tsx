@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@schologic/database';
 import { TimelineConfig, TimelineEvent, TimelineWeek, generateTimeline } from '@schologic/practicum-core';
 import { Calendar, Plus, Trash2, Save, X, AlertCircle, CheckCircle, Edit2, Filter, Eye, EyeOff, RefreshCw } from 'lucide-react';
@@ -16,9 +16,10 @@ interface TimelineEditorProps {
     endDate: string;
     cohortTitle: string;
     logInterval: 'daily' | 'weekly';
+    onDirtyChange?: (isDirty: boolean) => void;
 }
 
-export default function TimelineEditor({ practicumId, initialConfig, onUpdate, startDate, endDate, cohortTitle, logInterval }: TimelineEditorProps) {
+export default function TimelineEditor({ practicumId, initialConfig, onUpdate, startDate, endDate, cohortTitle, logInterval, onDirtyChange }: TimelineEditorProps) {
     const supabase = createClient();
     const { showToast } = useToast();
 
@@ -27,6 +28,35 @@ export default function TimelineEditor({ practicumId, initialConfig, onUpdate, s
     const [loading, setLoading] = useState(false);
     const [editingEvent, setEditingEvent] = useState<TimelineEvent | null>(null);
     const [showLogs, setShowLogs] = useState(false);
+    const prevDirtyRef = useRef(false); // Using ref to track emission
+
+    // Track Dirty State
+    useEffect(() => {
+        const isDirty = JSON.stringify(initialConfig || { weeks: [], events: [] }) !== JSON.stringify(config);
+
+        // Only emit if value implies a change from what we expect or just to be safe, only if it changes?
+        // Actually, we can use a ref to prevent duplicate emissions
+        // But simply checking if (isDirty) inside effect that runs on onDirtyChange is dangerous if parent recreates handler.
+        // We will assume parent might recreate handler, so we should guard emission.
+
+        // HOWEVER, since we can't use useRef directly in replace loop easily without adding import, 
+        // I'll assume useRef is available or use a state-based approach? No, state causes render.
+        // I will just use the fact that I can import useRef.
+        // A simpler way: Remove onDirtyChange from dependency array. 
+        // ESLint warns, but it is often safe if handler is stable-ish or we don't care about stale closure (here we strictly call it with boolean).
+
+        // Better:
+        if (onDirtyChange) onDirtyChange(isDirty);
+
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            if (isDirty) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [config, initialConfig]); // Removed onDirtyChange from deps to break loop
 
     const [showRegenerateConfirm, setShowRegenerateConfirm] = useState(false);
 

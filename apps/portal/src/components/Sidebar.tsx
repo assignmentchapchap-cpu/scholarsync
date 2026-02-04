@@ -12,6 +12,7 @@ import { useRouter } from 'next/navigation';
 import { useUser } from '@/context/UserContext';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { useNavigationGuard } from '@/context/NavigationGuardContext';
 
 function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
@@ -28,6 +29,7 @@ export default function Sidebar({ role, isCollapsed = false, onToggleCollapse }:
     const router = useRouter();
     const supabase = createClient();
     const [enablePracticums, setEnablePracticums] = useState(false);
+    const { interceptLink } = useNavigationGuard();
 
     useEffect(() => {
         const checkPrefs = async () => {
@@ -180,11 +182,11 @@ export default function Sidebar({ role, isCollapsed = false, onToggleCollapse }:
 
                             if (isRestricted) {
                                 return (
-                                    <Link
+                                    <button
                                         key={link.href}
-                                        href={link.href}
+                                        onClick={() => interceptLink(link.href, (href) => router.push(href))}
                                         className={cn(
-                                            "flex items-center px-3 py-3 text-sm font-bold rounded-xl text-slate-500 hover:bg-slate-800/50 hover:text-white transition-colors group cursor-pointer relative",
+                                            "flex items-center px-3 py-3 text-sm font-bold rounded-xl text-slate-500 hover:bg-slate-800/50 hover:text-white transition-colors group cursor-pointer relative w-full",
                                             isCollapsed ? "justify-center" : "justify-between"
                                         )}
                                         title={isCollapsed ? `${link.label} (Locked)` : undefined}
@@ -194,16 +196,16 @@ export default function Sidebar({ role, isCollapsed = false, onToggleCollapse }:
                                             {!isCollapsed && <span>{link.label}</span>}
                                         </div>
                                         {!isCollapsed && <span className="text-[10px] uppercase font-bold bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded border border-slate-700 group-hover:bg-slate-700 group-hover:text-white transition-colors">Lock</span>}
-                                    </Link>
+                                    </button>
                                 );
                             }
 
                             return (
-                                <Link
+                                <button
                                     key={link.href}
-                                    href={link.href}
+                                    onClick={() => interceptLink(link.href, (href) => router.push(href))}
                                     className={cn(
-                                        "flex items-center gap-3 px-3 py-3 text-sm font-bold rounded-xl transition-all duration-200 group relative",
+                                        "flex items-center gap-3 px-3 py-3 text-sm font-bold rounded-xl transition-all duration-200 group relative w-full",
                                         isActive
                                             ? "bg-indigo-600 text-white shadow-md shadow-indigo-900/20"
                                             : "text-slate-400 hover:text-white hover:bg-slate-800",
@@ -220,7 +222,7 @@ export default function Sidebar({ role, isCollapsed = false, onToggleCollapse }:
                                             {link.label}
                                         </div>
                                     )}
-                                </Link>
+                                </button>
                             );
                         })}
                     </nav>

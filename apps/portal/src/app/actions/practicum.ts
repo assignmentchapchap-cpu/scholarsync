@@ -1,6 +1,6 @@
 'use server';
 
-import { createSessionClient } from "@schologic/database/server"; // Import from specific server entry point if possible, or index
+import { createSessionClient } from "@schologic/database";
 import { cookies } from "next/headers";
 
 // Note: If @schologic/database index exports * from server, I can import { createSessionClient } from "@schologic/database"
