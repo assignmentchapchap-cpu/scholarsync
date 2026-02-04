@@ -22,6 +22,7 @@ export default function InstructorProfilePage() {
         bio: '',
         avatar_url: ''
     });
+    const [preferences, setPreferences] = useState<{ enable_practicum_management: boolean }>({ enable_practicum_management: false });
 
     const supabase = createClient();
     const router = useRouter();
@@ -71,6 +72,12 @@ export default function InstructorProfilePage() {
                     honorific: data.honorific || '',
                     bio: data.bio || '',
                     avatar_url: data.avatar_url || ''
+                });
+
+                // Parse preferences
+                const prefs = (data.preferences as any) || {};
+                setPreferences({
+                    enable_practicum_management: !!prefs.enable_practicum_management
                 });
             } else {
                 // Fallback if no profile data found but user is logged in
@@ -141,7 +148,8 @@ export default function InstructorProfilePage() {
                     bio: formData.bio,
                     avatar_url: formData.avatar_url,
                     role: 'instructor',
-                    email: user.email
+                    email: user.email,
+                    preferences: preferences // Save JSON preferences
                 });
 
             if (error) throw error;
@@ -312,6 +320,44 @@ export default function InstructorProfilePage() {
                         </div>
 
                     </form>
+                </div>
+
+                {/* Feature Settings Card */}
+                <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden mt-8">
+                    <div className="p-8 pb-6 border-b border-slate-100">
+                        <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                            <School className="w-5 h-5 text-indigo-500" /> Workspace Features
+                        </h2>
+                        <p className="text-slate-500 text-sm mt-1">Enable or disable advanced workspace capabilities.</p>
+                    </div>
+                    <div className="p-8">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="font-bold text-slate-800">Practicum Management</p>
+                                <p className="text-sm text-slate-500 max-w-sm mt-1">
+                                    Enables Field Attachment & Internship management features. Adds a dedicated "Practicums" section to your sidebar.
+                                </p>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    className="sr-only peer"
+                                    checked={preferences.enable_practicum_management}
+                                    onChange={(e) => setPreferences(prev => ({ ...prev, enable_practicum_management: e.target.checked }))}
+                                />
+                                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                            </label>
+                        </div>
+                    </div>
+                    <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end">
+                        <Button
+                            onClick={handleSave}
+                            isLoading={saving}
+                            className="bg-slate-900 text-white"
+                        >
+                            Save Preferences
+                        </Button>
+                    </div>
                 </div>
             </div>
         </div>

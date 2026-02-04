@@ -9,7 +9,8 @@ import {
     LOGS_ASSESSMENT_RUBRIC,
     TEACHING_PRACTICE_OBSERVATION_GUIDE,
     INDUSTRIAL_ATTACHMENT_OBSERVATION_GUIDE,
-    PRACTICUM_REPORT_SCORE_SHEET
+    PRACTICUM_REPORT_SCORE_SHEET,
+    generateTimeline
 } from '@schologic/practicum-core';
 import { ArrowLeft, ArrowRight, Check, Calendar, Settings, FileText, Loader2 } from 'lucide-react';
 import { useToast } from '@/context/ToastContext';
@@ -131,7 +132,7 @@ export default function NewPracticumPage() {
                 final_report_required: formData.finalReportRequired,
                 auto_approve: formData.autoApprove,
                 grading_config: { logs_weight: 40, supervisor_weight: 50, report_weight: 60 },
-                timeline: {},
+                timeline: generateTimeline(formData.startDate, formData.endDate, formData.logInterval as any, formData.title.trim()) as any,
             }).select().single();
 
             if (error) throw error;
@@ -202,7 +203,7 @@ export default function NewPracticumPage() {
                                     type="text"
                                     value={formData.title}
                                     onChange={(e) => updateField('title', e.target.value)}
-                                    placeholder="e.g., 2024 Industrial Attachment - Cohort A"
+                                    placeholder="e.g., 2026 Semester 1 - TP Cohort"
                                     className={`w-full px-4 py-3 rounded-xl border ${errors.title ? 'border-red-300 bg-red-50' : 'border-slate-200'} focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all`}
                                 />
                                 {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title}</p>}

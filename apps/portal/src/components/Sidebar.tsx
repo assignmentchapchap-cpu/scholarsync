@@ -10,7 +10,6 @@ import NotificationBell from './NotificationBell';
 import { createClient } from "@schologic/database";
 import { useRouter } from 'next/navigation';
 import { useUser } from '@/context/UserContext';
-
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -28,6 +27,22 @@ export default function Sidebar({ role, isCollapsed = false, onToggleCollapse }:
     const pathname = usePathname();
     const router = useRouter();
     const supabase = createClient();
+    const [enablePracticums, setEnablePracticums] = useState(false);
+
+    useEffect(() => {
+        const checkPrefs = async () => {
+            if (role === 'instructor') {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (user) {
+                    const { data } = await supabase.from('profiles').select('preferences').eq('id', user.id).maybeSingle();
+                    if (data?.preferences && (data.preferences as any).enable_practicum_management) {
+                        setEnablePracticums(true);
+                    }
+                }
+            }
+        };
+        checkPrefs();
+    }, [role]);
 
     const handleSignOut = async () => {
         await supabase.auth.signOut();
@@ -37,6 +52,7 @@ export default function Sidebar({ role, isCollapsed = false, onToggleCollapse }:
     const links = role === 'instructor' ? [
         { href: '/instructor/dashboard', label: 'Dashboard', icon: Home, color: 'text-indigo-400' },
         { href: '/instructor/classes', label: 'Classes', icon: GraduationCap, color: 'text-amber-500' },
+        ...(enablePracticums ? [{ href: '/instructor/practicums', label: 'Practicums', icon: FileText, color: 'text-orange-500' }] : []),
         { href: '/instructor/library', label: 'Library', icon: BookOpen, color: 'text-emerald-400' },
         { href: '/instructor/calendar', label: 'Calendar', icon: Calendar, color: 'text-blue-400' },
         { href: '/instructor/lab', label: 'AI Lab', icon: Terminal, color: 'text-rose-400' },

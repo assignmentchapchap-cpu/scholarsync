@@ -14,6 +14,9 @@ type Enrollment = Database['public']['Tables']['practicum_enrollments']['Row'] &
     profiles: Database['public']['Tables']['profiles']['Row'] | null;
 };
 
+import { TimelineConfig } from "@schologic/practicum-core";
+import TimelineEditor from '@/components/instructor/TimelineEditor';
+
 export default function PracticumDetailsPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
     return <PracticumDetailsContent id={id} />;
@@ -54,18 +57,42 @@ function PracticumDetailsContent({ id }: { id: string }) {
                 if (pracError) throw pracError;
                 setPracticum(pracData);
 
-                // Fetch Enrollments
-                const { data: enrollData, error: enrollError } = await supabase
+                // Fetch Enrollments (Basic)
+                const { data: enrollDataRaw, error: enrollError } = await supabase
                     .from('practicum_enrollments')
-                    .select('*, profiles(*)')
+                    .select('*')
                     .eq('practicum_id', id);
 
                 if (enrollError) throw enrollError;
-                setEnrollments(enrollData as unknown as Enrollment[]);
+
+                // Manually fetch profiles since recursive relation might be missing in types
+                let joinedEnrollments: Enrollment[] = [];
+                if (enrollDataRaw) {
+                    const studentIds = enrollDataRaw.map(e => e.student_id);
+                    const { data: profilesData } = await supabase
+                        .from('profiles')
+                        .select('*')
+                        .in('id', studentIds);
+
+                    const profilesMap = new Map(profilesData?.map(p => [p.id, p]));
+
+                    joinedEnrollments = enrollDataRaw.map(e => ({
+                        ...e,
+                        profiles: profilesMap.get(e.student_id) || null
+                    })) as unknown as Enrollment[];
+                }
+
+                setEnrollments(joinedEnrollments);
 
             } catch (error: any) {
-                console.error("Error fetching practicum data:", error);
-                showToast("Failed to load practicum data", "error");
+                console.error("Error fetching practicum data details:", {
+                    message: error.message,
+                    details: error.details,
+                    hint: error.hint,
+                    code: error.code,
+                    fullError: error
+                });
+                showToast("Failed to load practicum data: " + (error.message || "Unknown error"), "error");
             } finally {
                 setLoading(false);
             }
@@ -223,16 +250,13 @@ function PracticumDetailsContent({ id }: { id: string }) {
                             </div>
                         </Card>
 
-                        {/* Timeline / Progress Stub */}
-                        <Card className="hover:border-indigo-400 group">
-                            <div className="flex items-center gap-3 mb-3">
-                                <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg"><Calendar className="w-5 h-5" /></div>
-                                <h3 className="font-bold text-slate-700">Timeline</h3>
-                            </div>
-                            <div className="h-24 flex items-center justify-center text-slate-400 text-sm font-medium border-2 border-dashed border-slate-100 rounded-xl">
-                                Timeline Visualization Coming Soon
-                            </div>
-                        </Card>
+                        {/* Timeline Editor */}
+                        <div className="md:col-span-2 lg:col-span-3">
+                            <TimelineEditor
+                                practicumId={id}
+                                initialConfig={practicum.timeline as any} // Cast from Json
+                            />
+                        </div>
                     </div>
                 )}
 
