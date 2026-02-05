@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, Fragment } from 'react';
 import {
     RubricConfig,
     PracticumObservationGuide,
@@ -372,9 +372,9 @@ export function ReportRubricViewer({ rubric, onEdit }: { rubric: PracticumReport
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                             {rubric.sections.map((section, idx) => (
-                                <>
+                                <Fragment key={idx}>
                                     {/* Main Section Row */}
-                                    <tr key={`sec-${idx}`} className={`hover:bg-slate-50/50 ${section.subsections ? 'bg-slate-50/30 font-bold text-slate-800' : ''}`}>
+                                    <tr className={`hover:bg-slate-50/50 ${section.subsections ? 'bg-slate-50/30 font-bold text-slate-800' : ''}`}>
                                         <td className="p-4 text-center font-bold text-slate-500">{section.item_number}</td>
                                         <td className="p-4">
                                             <p className={section.subsections ? 'font-bold uppercase tracking-wider text-xs md:text-sm' : 'font-bold'}>
@@ -410,7 +410,7 @@ export function ReportRubricViewer({ rubric, onEdit }: { rubric: PracticumReport
                                             </td>
                                         </tr>
                                     ))}
-                                </>
+                                </Fragment>
                             ))}
                             {/* Total Row */}
                             <tr className="bg-emerald-50/50 font-bold text-emerald-900 border-t-2 border-emerald-100">

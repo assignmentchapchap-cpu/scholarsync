@@ -7,7 +7,7 @@ import { createClient } from "@schologic/database";
 import { ArrowRight, Loader2, Home, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/context/ToastContext';
-import { verifyClassInvite, enrollStudent } from '@/app/actions/student';
+import { verifyUnifiedInvite, enrollStudent, enrollStudentInPracticum } from '@/app/actions/student';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
@@ -44,11 +44,11 @@ export default function StudentLoginPage() {
             if (mode === 'signup') {
                 // --- SIGN UP FLOW ---
 
-                // 1. Verify Class Code via Server Action (Bypasses RLS)
-                const verifyRes = await verifyClassInvite(inviteCode);
+                // 1. Verify Invite Code via Server Action (Bypasses RLS)
+                const verifyRes = await verifyUnifiedInvite(inviteCode);
 
                 if (verifyRes.error) throw new Error(verifyRes.error);
-                if (!verifyRes.success || !verifyRes.classId) throw new Error("Invalid class invite code");
+                if (!verifyRes.success || !verifyRes.id) throw new Error("Invalid invite code");
 
                 // 2. Create Auth User
 
@@ -95,7 +95,12 @@ export default function StudentLoginPage() {
 
                 // 4. Create Enrollment via Server Action
                 // This uses the service role to insert even if the user is not yet confirmed/authenticated
-                const enrollRes = await enrollStudent(authData.user.id, verifyRes.classId, formattedName, regNumber);
+                let enrollRes;
+                if (verifyRes.type === 'class') {
+                    enrollRes = await enrollStudent(authData.user.id, verifyRes.id, formattedName, regNumber);
+                } else {
+                    enrollRes = await enrollStudentInPracticum(authData.user.id, verifyRes.id, formattedName, regNumber);
+                }
 
                 if (enrollRes.error && enrollRes.error !== 'Already enrolled') {
                     console.error("Enrollment Error:", enrollRes.error);
@@ -107,7 +112,11 @@ export default function StudentLoginPage() {
                 showToast("Account created! Please verify your email.", 'success');
                 // router.push('/student/dashboard'); // Don't redirect if not logged in
                 if (authData.session) {
-                    router.push('/student/dashboard');
+                    if (verifyRes.type === 'practicum') {
+                        router.push(`/student/practicum/${verifyRes.id}/setup`);
+                    } else {
+                        router.push('/student/dashboard');
+                    }
                 } else {
                     setMode('login'); // Switch to login view so they can login after verifying
                 }
@@ -176,11 +185,11 @@ export default function StudentLoginPage() {
                         <div className="space-y-5 animate-in fade-in slide-in-from-top-4">
                             <div className="relative">
                                 <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-100"></div></div>
-                                <div className="relative flex justify-center text-xs uppercase font-bold tracking-wider"><span className="bg-white px-2 text-slate-400">Class Details</span></div>
+                                <div className="relative flex justify-center text-xs uppercase font-bold tracking-wider"><span className="bg-white px-2 text-slate-400">Enrollment Details</span></div>
                             </div>
 
                             <Input
-                                label="CLASS INVITE CODE"
+                                label="INVITE CODE"
                                 value={inviteCode}
                                 onChange={e => setInviteCode(e.target.value)}
                                 className="font-mono text-center text-xl tracking-widest uppercase focus:ring-emerald-500"
@@ -231,7 +240,7 @@ export default function StudentLoginPage() {
                         variant="success"
                         className="active:scale-95 shadow-lg shadow-emerald-100"
                     >
-                        {mode === 'signup' ? 'Join Class' : 'Log In'}
+                        {mode === 'signup' ? 'Join Portal' : 'Log In'}
                     </Button>
                 </form>
 
