@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import {
     X, ChevronLeft, ChevronRight, Phone, Mail, MapPin,
-    Calendar, GraduationCap, Building2, User, Check, XCircle
+    Calendar, GraduationCap, User, Check, XCircle, FileText
 } from 'lucide-react';
 import { Dialog, DialogContent } from '@/components/ui/Dialog';
 import { cn } from '@/lib/utils';
@@ -279,7 +279,7 @@ export default function StudentProfileModal({
                                     {/* Workplace Card */}
                                     <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
                                         <div className="flex items-center gap-2 mb-4 text-slate-900 font-bold border-b border-slate-100 pb-2">
-                                            <Building2 className="w-5 h-5 text-blue-600" />
+                                            <MapPin className="w-5 h-5 text-blue-600" />
                                             <h3>Workplace Details</h3>
                                         </div>
                                         <div className="grid grid-cols-2 gap-y-4 gap-x-8 text-sm">
@@ -391,5 +391,4 @@ export default function StudentProfileModal({
         </Dialog>
     );
 }
-// Icon import correction
-import { FileText } from 'lucide-react';
+

@@ -8,7 +8,7 @@ import {
     ObservationAttribute,
     ReportSection
 } from '@schologic/practicum-core';
-import { CheckCircle2, AlertCircle, FileText, Check, Pen } from 'lucide-react';
+import { CheckCircle2, AlertCircle, FileText, Check, Pencil } from 'lucide-react';
 
 // --- Logs Assessment Viewer ---
 export function LogsRubricViewer({ rubric, onEdit }: { rubric: RubricConfig, onEdit?: () => void }) {
@@ -30,7 +30,7 @@ export function LogsRubricViewer({ rubric, onEdit }: { rubric: RubricConfig, onE
                             className="p-2 text-emerald-600 hover:bg-emerald-100 rounded-lg transition-colors border border-transparent hover:border-emerald-200"
                             title="Edit Template"
                         >
-                            <Pen className="w-5 h-5" />
+                            <Pencil className="w-5 h-5" />
                         </button>
                     )}
                     <div className="bg-white p-1 rounded-lg shadow-sm border border-emerald-100 flex text-sm">
@@ -154,7 +154,7 @@ export function SupervisorRubricViewer({ rubric, onEdit }: { rubric: PracticumOb
                             className="p-2 text-emerald-600 hover:bg-emerald-100 rounded-lg transition-colors border border-transparent hover:border-emerald-200"
                             title="Edit Template"
                         >
-                            <Pen className="w-5 h-5" />
+                            <Pencil className="w-5 h-5" />
                         </button>
                     )}
                     <div className="bg-white p-1 rounded-lg shadow-sm border border-emerald-100 flex text-sm">
@@ -295,7 +295,7 @@ export function ReportRubricViewer({ rubric, onEdit }: { rubric: PracticumReport
                             className="p-2 text-emerald-600 hover:bg-emerald-100 rounded-lg transition-colors border border-transparent hover:border-emerald-200"
                             title="Edit Template"
                         >
-                            <Pen className="w-5 h-5" />
+                            <Pencil className="w-5 h-5" />
                         </button>
                     )}
                     <div className="bg-white p-1 rounded-lg shadow-sm border border-emerald-100 flex text-sm">
