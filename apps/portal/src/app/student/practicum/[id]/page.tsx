@@ -673,7 +673,7 @@ export default function StudentPracticumDashboard({ params }: { params: Promise<
                                                                             <th className="p-3 font-bold w-24">Date</th>
                                                                             {practicum.log_template === 'teaching_practice' ? (
                                                                                 <>
-                                                                                    <th className="p-3 font-bold w-24">Class</th>
+                                                                                    <th className="p-3 font-bold w-24">Grade</th>
                                                                                     <th className="p-3 font-bold w-32">Subject</th>
                                                                                     <th className="p-3 font-bold w-1/4">Topic</th>
                                                                                     <th className="p-3 font-bold">Observations</th>
@@ -753,7 +753,7 @@ export default function StudentPracticumDashboard({ params }: { params: Promise<
                                                                         <p className="font-bold text-slate-800">{entries.subject_taught}</p>
                                                                     </div>
                                                                     <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                                                                        <label className="text-xs font-bold text-slate-400 uppercase">Class</label>
+                                                                        <label className="text-xs font-bold text-slate-400 uppercase">Grade</label>
                                                                         <p className="font-bold text-slate-800">{entries.class_taught}</p>
                                                                     </div>
                                                                 </>

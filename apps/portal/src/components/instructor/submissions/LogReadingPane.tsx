@@ -111,15 +111,16 @@ export default function LogReadingPane({ log, practicum, onVerify, onReject, ver
                                             <th className="p-3 font-bold w-32">Date</th>
                                             {practicum.log_template === 'teaching_practice' ? (
                                                 <>
-                                                    <th className="p-3 font-bold">Class/Subject</th>
-                                                    <th className="p-3 font-bold">Topic</th>
+                                                    <th className="p-3 font-bold w-32">Grade</th>
+                                                    <th className="p-3 font-bold w-48">Subject</th>
+                                                    <th className="p-3 font-bold w-64">Topic</th>
                                                     <th className="p-3 font-bold">Observations</th>
                                                 </>
                                             ) : (
                                                 <>
-                                                    <th className="p-3 font-bold">Dept.</th>
-                                                    <th className="p-3 font-bold">Tasks</th>
-                                                    <th className="p-3 font-bold">Skills/Challenges</th>
+                                                    <th className="p-3 font-bold w-48">Dept.</th>
+                                                    <th className="p-3 font-bold w-80">Tasks</th>
+                                                    <th className="p-3 font-bold w-64">Skills/Challenges</th>
                                                 </>
                                             )}
                                         </tr>
@@ -132,16 +133,14 @@ export default function LogReadingPane({ log, practicum, onVerify, onReject, ver
                                                 </td>
                                                 {practicum.log_template === 'teaching_practice' ? (
                                                     <>
-                                                        <td className="p-3 text-slate-600 align-top">
-                                                            <div className="font-bold text-slate-800">{day.subject_taught}</div>
-                                                            <div className="text-xs">{day.class_taught}</div>
-                                                        </td>
+                                                        <td className="p-3 text-slate-600 align-top font-bold text-xs">{day.class_taught}</td>
+                                                        <td className="p-3 text-slate-600 align-top font-bold text-sm">{day.subject_taught}</td>
                                                         <td className="p-3 text-slate-600 align-top">{day.lesson_topic || '-'}</td>
                                                         <td className="p-3 text-slate-600 align-top text-xs leading-relaxed min-w-[200px] whitespace-pre-wrap">{day.observations || '-'}</td>
                                                     </>
                                                 ) : (
                                                     <>
-                                                        <td className="p-3 text-slate-600 align-top">{day.department || '-'}</td>
+                                                        <td className="p-3 text-slate-600 align-top font-bold text-sm">{day.department || '-'}</td>
                                                         <td className="p-3 text-slate-600 align-top text-xs leading-relaxed max-w-[200px] whitespace-pre-wrap">{day.tasks_performed || '-'}</td>
                                                         <td className="p-3 text-slate-600 align-top text-xs leading-relaxed max-w-[200px] whitespace-pre-wrap">
                                                             {day.skills_acquired && <div className="mb-1"><span className="font-bold text-emerald-600">Skills:</span> {day.skills_acquired}</div>}

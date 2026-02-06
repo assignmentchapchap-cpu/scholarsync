@@ -35,23 +35,31 @@ export default function SubmissionsManager({ practicumId, practicum }: Submissio
     // Processing State
     const [processingId, setProcessingId] = useState<string | null>(null);
 
-    // Initial Fetch
     const fetchAllData = async () => {
+        if (!practicumId) return;
+
         try {
             setLoading(true);
 
-            // 1. Fetch Enrollments (Basic)
+            // 1. Fetch Enrollments
             const { data: enrollDataRaw, error: enrollError } = await supabase
                 .from('practicum_enrollments')
                 .select('*')
                 .eq('practicum_id', practicumId)
                 .eq('status', 'approved')
-                .order('created_at', { ascending: true });
+                .order('joined_at', { ascending: true });
 
             if (enrollError) throw enrollError;
 
-            // Fetch profiles separately to avoid type issues
-            const studentIds = enrollDataRaw?.map(e => e.student_id) || [];
+            if (!enrollDataRaw || enrollDataRaw.length === 0) {
+                setStudents([]);
+                setLogs([]);
+                setLoading(false);
+                return;
+            }
+
+            // 2. Fetch Profiles
+            const studentIds = enrollDataRaw.map(e => e.student_id);
             let profilesMap = new Map();
 
             if (studentIds.length > 0) {
@@ -60,38 +68,38 @@ export default function SubmissionsManager({ practicumId, practicum }: Submissio
                     .select('*')
                     .in('id', studentIds);
 
-                profilesMap = new Map(profilesData?.map(p => [p.id, p]));
+                if (profilesData) {
+                    profilesMap = new Map(profilesData.map(p => [p.id, p]));
+                }
             }
 
-            // 2. Fetch All Logs for these Students (Phase 1)
-            // Note: practicum_logs usually links via enrollment_id, not practicum_id directly
-            const enrollmentIds = enrollDataRaw?.map(e => e.id) || [];
-
+            // 3. Fetch Logs (Using correct schema: practicum_id + student_id)
             let logData: any[] = [];
 
-            if (enrollmentIds.length > 0) {
-                const { data, error: logError } = await supabase
+            if (studentIds.length > 0) {
+                const { data: fetchedLogs, error: logError } = await supabase
                     .from('practicum_logs')
                     .select('*')
-                    .in('enrollment_id', enrollmentIds)
+                    .eq('practicum_id', practicumId)
+                    .in('student_id', studentIds)
                     .neq('submission_status', 'draft')
                     .order('log_date', { ascending: false });
 
                 if (logError) throw logError;
-                logData = data || [];
+                logData = fetchedLogs || [];
             }
 
-            // 3. Attach profiles and logs
-            const studentsWithLogs = (enrollDataRaw || []).map(student => ({
+            // 4. Combine Data
+            const studentsWithLogs = enrollDataRaw.map(student => ({
                 ...student,
                 profiles: profilesMap.get(student.student_id) || null,
-                logs: (logData || []).filter(l => l.student_id === student.student_id)
+                logs: logData.filter(l => l.student_id === student.student_id)
             })) as Enrollment[];
 
             setStudents(studentsWithLogs);
-            setLogs(logData || []);
+            setLogs(logData);
 
-            // Default select first student if none selected
+            // Auto-select first student if none selected
             if (!selectedStudentId && studentsWithLogs.length > 0) {
                 setSelectedStudentId(studentsWithLogs[0].student_id);
             }

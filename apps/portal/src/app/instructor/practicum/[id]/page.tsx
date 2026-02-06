@@ -206,7 +206,7 @@ function PracticumDetailsContent({ id }: { id: string }) {
 
     return (
         <div className="min-h-screen bg-slate-50 p-4 md:p-8">
-            <div className="max-w-6xl mx-auto">
+            <div className="max-w-[1600px] mx-auto">
                 <Link href="/instructor/practicums" className="flex items-center gap-2 text-slate-500 hover:text-slate-800 mb-6 transition-colors font-medium text-sm">
                     <ArrowLeft className="w-4 h-4" /> <span className="hidden md:inline">Back to Practicums</span>
                 </Link>

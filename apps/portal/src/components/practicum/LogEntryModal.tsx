@@ -215,7 +215,7 @@ export default function LogEntryModal({
                             {isTeaching ? (
                                 <>
                                     <div className="space-y-2">
-                                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">Class Taught</label>
+                                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">Grade</label>
                                         <input required placeholder="e.g. Form 3B" value={entry.class_taught || ''} onChange={e => handleChange('class_taught', e.target.value)}
                                             className="w-full bg-white border border-slate-300 shadow-sm rounded-xl px-4 py-3.5 text-sm font-medium text-slate-900 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all hover:border-emerald-300 placeholder:text-slate-400"
                                         />

@@ -36,9 +36,9 @@ export default function StudentListSidebar({ students, selectedId, onSelect, pra
     };
 
     return (
-        <div className="h-full flex flex-col bg-slate-900 text-slate-300 border-r border-slate-800 w-64 flex-shrink-0">
-            <div className="p-4 border-b border-slate-800">
-                <h3 className="font-bold text-white text-sm uppercase tracking-wider">Students</h3>
+        <div className="h-full flex flex-col bg-emerald-50/50 text-slate-600 border-r border-slate-200 w-64 flex-shrink-0">
+            <div className="p-4 border-b border-emerald-100">
+                <h3 className="font-bold text-slate-900 text-sm uppercase tracking-wider">Students</h3>
                 <p className="text-xs text-slate-500 mt-1">{students.length} Enrolled</p>
             </div>
 
@@ -54,24 +54,27 @@ export default function StudentListSidebar({ students, selectedId, onSelect, pra
                             key={student.id}
                             onClick={() => onSelect(student.student_id)}
                             className={cn(
-                                "p-4 border-b border-slate-800/50 cursor-pointer transition-colors group hover:bg-slate-800",
-                                isSelected ? "bg-slate-800 border-l-4 border-l-emerald-500" : "border-l-4 border-l-transparent"
+                                "p-4 border-b border-emerald-100/50 cursor-pointer transition-colors group hover:bg-emerald-100/50",
+                                isSelected ? "bg-white border-l-4 border-l-emerald-500 shadow-sm" : "border-l-4 border-l-transparent"
                             )}
                         >
                             <div className="flex justify-between items-start mb-2">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-slate-400">
-                                        <User className="w-4 h-4" />
+                                    <div className={cn(
+                                        "w-8 h-8 rounded-full flex items-center justify-center text-emerald-600 font-bold text-xs",
+                                        isSelected ? "bg-emerald-100" : "bg-white border border-emerald-100"
+                                    )}>
+                                        {name.charAt(0)}
                                     </div>
                                     <div>
-                                        <h4 className={cn("font-bold text-sm", isSelected ? "text-white" : "text-slate-300 group-hover:text-white")}>
+                                        <h4 className={cn("font-bold text-sm", isSelected ? "text-slate-900" : "text-slate-600 group-hover:text-slate-900")}>
                                             {name}
                                         </h4>
-                                        <p className="text-[10px] text-slate-500 truncate max-w-[100px]">{email}</p>
+                                        <p className="text-[10px] text-slate-400 truncate max-w-[100px]">{email}</p>
                                     </div>
                                 </div>
                                 {unreadCount > 0 && (
-                                    <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                                    <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center shadow-sm">
                                         {unreadCount}
                                     </span>
                                 )}
@@ -79,13 +82,13 @@ export default function StudentListSidebar({ students, selectedId, onSelect, pra
 
                             {/* Mini Progress Bar */}
                             <div className="flex items-center gap-2 mt-2">
-                                <div className="flex-grow h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                                <div className="flex-grow h-1.5 bg-slate-200 rounded-full overflow-hidden">
                                     <div
                                         className="h-full bg-emerald-500 rounded-full"
                                         style={{ width: `${percent}%` }}
                                     />
                                 </div>
-                                <span className="text-[10px] font-mono text-slate-500">{percent}%</span>
+                                <span className="text-[10px] font-mono text-slate-400">{percent}%</span>
                             </div>
                         </div>
                     )
