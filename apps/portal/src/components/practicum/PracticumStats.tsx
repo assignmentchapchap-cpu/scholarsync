@@ -29,7 +29,7 @@ export default function PracticumStats({ enrollment, practicum, logs }: Practicu
         ? Math.ceil(totalDays / 7)
         : totalDays;
 
-    const logsSubmitted = logs.length;
+    const logsSubmitted = logs.filter(l => (l as any).submission_status !== 'draft').length;
     const progressPercent = Math.min(100, Math.round((logsSubmitted / totalExpectedLogs) * 100));
 
     // 2. Time Remaining
@@ -38,7 +38,8 @@ export default function PracticumStats({ enrollment, practicum, logs }: Practicu
 
     // 3. Verification Status
     const verifiedLogs = logs.filter(l => l.supervisor_status === 'verified').length;
-    const pendingLogs = logs.filter(l => l.supervisor_status === 'pending').length;
+    // Ensure we only count pending if it's actually submitted
+    const pendingLogs = logs.filter(l => (l as any).submission_status !== 'draft' && l.supervisor_status === 'pending').length;
     const rejectedLogs = logs.filter(l => l.supervisor_status === 'rejected').length;
 
     // Warning if many pending (e.g. > 5) or any rejected

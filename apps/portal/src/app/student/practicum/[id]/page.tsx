@@ -54,6 +54,7 @@ export default function StudentPracticumDashboard({ params }: { params: Promise<
 
     const [rubricTab, setRubricTab] = useState<'logs' | 'supervisor' | 'report'>('logs');
     const [selectedLogId, setSelectedLogId] = useState<string | null>(null);
+    const [logFilter, setLogFilter] = useState<'all' | 'draft' | 'pending'>('all');
 
     const fetchDashboardData = async () => {
         try {
@@ -443,6 +444,16 @@ export default function StudentPracticumDashboard({ params }: { params: Promise<
                                             </div>
                                         </section>
 
+                                        {/* Recent Activity Moved to Sidebar */}
+                                    </div>
+
+                                    <div className="space-y-8">
+                                        <div className="bg-slate-900 text-slate-200 p-6 rounded-3xl relative overflow-hidden">
+                                            <h3 className="text-white font-bold text-lg mb-4 flex items-center gap-2"><User className="w-5 h-5 text-emerald-400" /> Supervisor</h3>
+                                            <p className="text-2xl font-black text-white mb-1">{supervisor.name || 'Not Assigned'}</p>
+                                            <p className="font-medium text-emerald-400 mb-4">{supervisor.designation || 'Supervisor'}</p>
+                                        </div>
+
                                         <section>
                                             <h3 className="text-xl font-bold text-slate-900 mb-4">Recent Activity</h3>
                                             <div className="space-y-3">
@@ -458,10 +469,10 @@ export default function StudentPracticumDashboard({ params }: { params: Promise<
                                                         <span className={cn("text-xs font-bold px-3 py-1 rounded-full",
                                                             log.supervisor_status === 'verified' ? "bg-emerald-100 text-emerald-700" :
                                                                 log.supervisor_status === 'rejected' ? "bg-red-100 text-red-700" :
-                                                                    log.submission_status === 'draft' ? "bg-amber-100 text-amber-700" :
+                                                                    (log as any).submission_status === 'draft' ? "bg-amber-100 text-amber-700" :
                                                                         "bg-blue-100 text-blue-700"
                                                         )}>{
-                                                                log.submission_status === 'draft' ? 'Draft' :
+                                                                (log as any).submission_status === 'draft' ? 'Draft' :
                                                                     log.supervisor_status === 'verified' ? 'Verified' :
                                                                         log.supervisor_status === 'rejected' ? 'Rejected' :
                                                                             'Submitted'
@@ -471,15 +482,6 @@ export default function StudentPracticumDashboard({ params }: { params: Promise<
                                                 {logs.length === 0 && <div className="text-center py-8 text-slate-400">No activity yet.</div>}
                                             </div>
                                         </section>
-                                    </div>
-
-                                    <div className="space-y-8">
-                                        <div className="bg-slate-900 text-slate-200 p-6 rounded-3xl relative overflow-hidden">
-                                            <h3 className="text-white font-bold text-lg mb-4 flex items-center gap-2"><User className="w-5 h-5 text-emerald-400" /> Supervisor</h3>
-                                            <p className="text-2xl font-black text-white mb-1">{supervisor.name || 'Not Assigned'}</p>
-                                            <p className="font-medium text-emerald-400 mb-4">{supervisor.designation || 'Supervisor'}</p>
-                                            <div className="pt-4 border-t border-slate-800"><span className="text-xs uppercase">Actions: Resend Verify Link</span></div>
-                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -522,12 +524,33 @@ export default function StudentPracticumDashboard({ params }: { params: Promise<
                             <div className="h-[calc(100vh-200px)] min-h-[600px] flex flex-col md:flex-row gap-6 bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
                                 {/* LEFT: Sidebar List */}
                                 <div className="w-full md:w-1/3 border-r border-slate-100 flex flex-col bg-slate-50/50">
-                                    <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-white">
-                                        <h3 className="font-bold text-slate-900">Log Entries</h3>
-                                        <button className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400"><List className="w-4 h-4" /></button>
+                                    <div className="p-4 border-b border-slate-100 flex flex-col gap-3 bg-white">
+                                        <div className="flex justify-between items-center">
+                                            <h3 className="font-bold text-slate-900">Log Entries</h3>
+                                            <span className="text-xs font-bold text-slate-400">{logs.length} Total</span>
+                                        </div>
+                                        <div className="flex p-1 bg-slate-100 rounded-lg">
+                                            {(['all', 'draft', 'pending'] as const).map(f => (
+                                                <button
+                                                    key={f}
+                                                    onClick={() => setLogFilter(f)}
+                                                    className={cn(
+                                                        "flex-1 py-1.5 text-xs font-bold rounded-md capitalize transition-all",
+                                                        logFilter === f ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                                                    )}
+                                                >
+                                                    {f}
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
                                     <div className="overflow-y-auto flex-grow p-3 space-y-2">
-                                        {logs.map(log => {
+                                        {logs.filter(l => {
+                                            if (logFilter === 'all') return true;
+                                            if (logFilter === 'draft') return (l as any).submission_status === 'draft';
+                                            if (logFilter === 'pending') return (l as any).submission_status !== 'draft' && l.supervisor_status === 'pending';
+                                            return true;
+                                        }).map(log => {
                                             const isSelected = selectedLogId === log.id;
                                             const entries = log.entries as any;
                                             const title = practicum.log_interval === 'daily'
