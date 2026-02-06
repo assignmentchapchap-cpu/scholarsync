@@ -7,7 +7,7 @@ import {
     ArrowLeft, Calendar, MapPin, User,
     BookOpen, Layers, CheckCircle2, Clock,
     FileText, Download, Upload, ChevronRight, AlertCircle,
-    List, Eye, EyeOff
+    List, Eye, EyeOff, Plus, Edit2, Send, Trash2, Loader2
 } from 'lucide-react';
 import Link from 'next/link';
 import { Card } from '@/components/ui/Card';
@@ -15,10 +15,8 @@ import { useToast } from '@/context/ToastContext';
 import PracticumStats from '@/components/practicum/PracticumStats';
 import LogEntryModal from '@/components/practicum/LogEntryModal';
 import { Database } from "@schologic/database";
-import { LogTemplateType, PracticumTimeline, TimelineEvent, TimelineWeek, PracticumLogEntry } from '@/types/practicum';
+import { LogTemplateType, PracticumTimeline, TimelineEvent, TimelineWeek, PracticumLogEntry, LogFrequency, CompositeLogData } from '@/types/practicum';
 import { cn } from '@/lib/utils';
-
-// Import Instructor Viewers for Parity
 import { LogsRubricViewer, SupervisorRubricViewer, ReportRubricViewer } from '@/components/instructor/rubrics/RubricViewers';
 import {
     LOGS_ASSESSMENT_RUBRIC,
@@ -27,10 +25,9 @@ import {
     PRACTICUM_REPORT_SCORE_SHEET
 } from "@schologic/practicum-core";
 
-// Types
 type Practicum = Database['public']['Tables']['practicums']['Row'];
 type Enrollment = Database['public']['Tables']['practicum_enrollments']['Row'];
-type LogEntry = Database['public']['Tables']['practicum_logs']['Row'];
+type LogEntry = Database['public']['Tables']['practicum_logs']['Row'] & { submission_status?: string; instructor_status?: string; };
 type Resource = Database['public']['Tables']['practicum_resources']['Row'];
 
 export default function StudentPracticumDashboard({ params }: { params: Promise<{ id: string }> }) {
@@ -40,82 +37,172 @@ export default function StudentPracticumDashboard({ params }: { params: Promise<
     const { showToast } = useToast();
     const supabase = createClient();
 
-    // -- State --
     const [loading, setLoading] = useState(true);
     const [practicum, setPracticum] = useState<Practicum | null>(null);
     const [enrollment, setEnrollment] = useState<Enrollment | null>(null);
     const [logs, setLogs] = useState<LogEntry[]>([]);
     const [resources, setResources] = useState<Resource[]>([]);
 
-    // UI State
     const activeTab = searchParams.get('tab') as 'overview' | 'rubrics' | 'resources' | 'logs' | 'report' || 'overview';
     const [isLogModalOpen, setIsLogModalOpen] = useState(false);
-    const [showLogs, setShowLogs] = useState(false); // Default hide logs
+    const [showLogs, setShowLogs] = useState(false);
 
-    // Rubric Sub-tab State
+    // Log Modal Editing State
+    const [editingLogDate, setEditingLogDate] = useState<string | undefined>(undefined);
+    const [editingLogData, setEditingLogData] = useState<PracticumLogEntry | undefined>(undefined);
+    const [targetWeekNumber, setTargetWeekNumber] = useState<number | undefined>(undefined);
+
     const [rubricTab, setRubricTab] = useState<'logs' | 'supervisor' | 'report'>('logs');
+    const [selectedLogId, setSelectedLogId] = useState<string | null>(null);
 
-    // -- Fetch Data --
-    useEffect(() => {
-        const fetchDashboardData = async () => {
-            try {
-                const { data: { user } } = await supabase.auth.getUser();
-                if (!user) return; // Middleware should handle
+    const fetchDashboardData = async () => {
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
 
-                // 1. Fetch Enrollment & Practicum
-                const { data: enrollData, error: enrollError } = await supabase
-                    .from('practicum_enrollments')
-                    .select('*, practicums(*)')
-                    .eq('student_id', user.id)
-                    .eq('practicum_id', id)
-                    .single();
+            const { data: enrollData, error: enrollError } = await supabase
+                .from('practicum_enrollments')
+                .select('*, practicums(*)')
+                .eq('student_id', user.id)
+                .eq('practicum_id', id)
+                .single();
 
-                if (enrollError || !enrollData) {
-                    router.replace(`/student/practicum/${id}/setup`);
-                    return;
-                }
-
-                // 2. STATUS CHECK
-                if (enrollData.status !== 'approved') {
-                    router.replace(`/student/practicum/${id}/setup`);
-                    return;
-                }
-
-                setEnrollment(enrollData);
-                setPracticum(enrollData.practicums as unknown as Practicum);
-
-                // 3. Fetch Logs
-                const { data: logData, error: logError } = await supabase
-                    .from('practicum_logs')
-                    .select('*')
-                    .eq('practicum_id', id)
-                    .eq('student_id', user.id)
-                    .order('log_date', { ascending: false });
-
-                if (logError) throw logError;
-                setLogs(logData || []);
-
-                // 4. Fetch Resources
-                const { data: resData, error: resError } = await supabase
-                    .from('practicum_resources')
-                    .select('*')
-                    .eq('practicum_id', id);
-
-                if (resError) throw resError;
-                setResources(resData || []);
-
-            } catch (error: any) {
-                console.error("Dashboard fetch error:", error);
-                showToast("Failed to load dashboard data", "error");
-            } finally {
-                setLoading(false);
+            if (enrollError || !enrollData) {
+                router.replace(`/student/practicum/${id}/setup`);
+                return;
             }
-        };
 
+            if (enrollData.status !== 'approved') {
+                router.replace(`/student/practicum/${id}/setup`);
+                return;
+            }
+
+            setEnrollment(enrollData);
+            setPracticum(enrollData.practicums as unknown as Practicum);
+
+            const { data: logData, error: logError } = await supabase
+                .from('practicum_logs')
+                .select('*')
+                .eq('practicum_id', id)
+                .eq('student_id', user.id)
+                .order('log_date', { ascending: false });
+
+            if (logError) throw logError;
+            setLogs(logData || []);
+
+            const { data: resData, error: resError } = await supabase
+                .from('practicum_resources')
+                .select('*')
+                .eq('practicum_id', id);
+
+            if (resError) throw resError;
+            setResources(resData || []);
+
+        } catch (error: any) {
+            console.error("Dashboard fetch error:", error);
+            showToast("Failed to load dashboard data", "error");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
         fetchDashboardData();
     }, [id, router]);
 
-    // -- Navigation Helper --
+    const [creatingLog, setCreatingLog] = useState(false);
+
+    const handleCreateLog = async () => {
+        if (!practicum) return;
+
+        if (practicum.log_interval === 'daily') {
+            setEditingLogDate(undefined);
+            setEditingLogData(undefined);
+            setTargetWeekNumber(undefined);
+            setIsLogModalOpen(true);
+        } else {
+            // Weekly/Monthly Logic: Create new container
+            if (!confirm(`Start a new ${practicum.log_interval} log entry?`)) return;
+            setCreatingLog(true);
+
+            try {
+                const user = (await supabase.auth.getUser()).data.user;
+                if (!user) throw new Error("Authentication required");
+
+                const nextWeek = logs.length > 0
+                    ? Math.max(...logs.map(l => l.week_number || 0)) + 1
+                    : 1;
+
+                const { data, error } = await supabase.from('practicum_logs').insert({
+                    student_id: user.id,
+                    practicum_id: id,
+                    week_number: nextWeek,
+                    log_date: new Date().toISOString(), // Generic date for sorting
+                    submission_status: 'draft',
+                    supervisor_status: 'pending',
+                    instructor_status: 'unread',
+                    entries: { days: [] }
+                }).select().single();
+
+                if (error) throw error;
+
+                await fetchDashboardData();
+                setTab('logs');
+                if (data) setSelectedLogId(data.id);
+                showToast(`Started Week ${nextWeek}`, "success");
+
+            } catch (e: any) {
+                console.error(e);
+                showToast(e.message || "Failed to create log", "error");
+            } finally {
+                setCreatingLog(false);
+            }
+        }
+    };
+
+    const handleEditDay = (date: string, data: PracticumLogEntry, weekNumber?: number) => {
+        setEditingLogDate(date);
+        setEditingLogData(data);
+        setTargetWeekNumber(weekNumber);
+        setIsLogModalOpen(true);
+    };
+
+    const handleSubmission = async (logId: string) => {
+        if (!confirm("Are you sure you want to submit this log for assessment? You will not be able to edit it afterwards.")) return;
+
+        try {
+            const { error } = await supabase
+                .from('practicum_logs')
+                .update({
+                    submission_status: 'submitted',
+                    supervisor_status: 'pending',
+                    instructor_status: 'unread'
+                })
+                .eq('id', logId);
+
+            if (error) throw error;
+
+            showToast("Log submitted successfully!", "success");
+            fetchDashboardData();
+        } catch (e: any) {
+            showToast(e.message, "error");
+        }
+    };
+
+    const handleDeleteLog = async (logId: string) => {
+        if (!confirm("Are you sure? This cannot be undone.")) return;
+        try {
+            const { error } = await supabase.from('practicum_logs').delete().eq('id', logId);
+            if (error) throw error;
+
+            setSelectedLogId(null);
+            fetchDashboardData();
+            showToast("Log deleted", "success");
+        } catch (e: any) {
+            showToast(e.message, "error");
+        }
+    }
+
     const setTab = (tab: string) => {
         router.push(`/student/practicum/${id}?tab=${tab}`);
     };
@@ -123,11 +210,9 @@ export default function StudentPracticumDashboard({ params }: { params: Promise<
     if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-50"><span className="animate-pulse font-bold text-slate-400">Loading Dashboard...</span></div>;
     if (!practicum || !enrollment) return null;
 
-    // Parse Timeline & Data
     const timeline = (practicum.timeline as unknown as PracticumTimeline) || { milestones: [] };
     const supervisor = (enrollment.supervisor_data as any) || {};
 
-    // Prepare Rubrics (Use defaults if DB is empty)
     const logsRubric = (practicum.logs_rubric as any) || LOGS_ASSESSMENT_RUBRIC;
     const supervisorRubric = (practicum.supervisor_report_template as any) ||
         (practicum.log_template === 'industrial_attachment' ? INDUSTRIAL_ATTACHMENT_OBSERVATION_GUIDE : TEACHING_PRACTICE_OBSERVATION_GUIDE);
@@ -137,7 +222,6 @@ export default function StudentPracticumDashboard({ params }: { params: Promise<
         <div className="min-h-screen bg-slate-50 p-4 md:p-8">
             <div className="max-w-7xl mx-auto space-y-8">
 
-                {/* 1. Header Area */}
                 <div className="flex flex-col gap-2">
                     <nav className="flex items-center gap-2 text-sm text-slate-500 mb-2">
                         <Link href="/student/practicums" className="hover:text-emerald-600 transition-colors">My Practicums</Link>
@@ -167,23 +251,22 @@ export default function StudentPracticumDashboard({ params }: { params: Promise<
                         </div>
 
                         <button
-                            onClick={() => setIsLogModalOpen(true)}
-                            className="bg-emerald-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-200 flex items-center gap-2 active:scale-95"
+                            onClick={handleCreateLog}
+                            disabled={creatingLog}
+                            className="bg-emerald-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-200 flex items-center gap-2 active:scale-95 disabled:opacity-70 disabled:active:scale-100"
                         >
-                            <FileText className="w-5 h-5" />
-                            New Log Entry
+                            {creatingLog ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
+                            {practicum.log_interval === 'daily' ? 'New Log Entry' : `Start New ${practicum.log_interval === 'weekly' ? 'Week' : 'Month'}`}
                         </button>
                     </div>
                 </div>
 
-                {/* Main Tabs Navigation (Stats Moved Inside Overview) */}
                 <div className="flex flex-col gap-6">
                     <div className="flex gap-1 overflow-x-auto pb-2 no-scrollbar border-b border-slate-200">
                         {[
                             { id: 'overview', label: 'Overview', icon: Layers },
-                            // Timeline removed
                             { id: 'rubrics', label: 'Rubrics', icon: CheckCircle2 },
-                            { id: 'resources', label: 'Resources', icon: BookOpen }, // Added Resources
+                            { id: 'resources', label: 'Resources', icon: BookOpen },
                             { id: 'logs', label: 'My Logs', icon: FileText },
                             { id: 'report', label: 'Final Report', icon: FileText },
                         ].map((tab) => (
@@ -203,43 +286,22 @@ export default function StudentPracticumDashboard({ params }: { params: Promise<
                         ))}
                     </div>
 
-                    {/* Tab Content */}
                     <div className="animate-fade-in min-h-[400px]">
-
-                        {/* TAB: OVERVIEW */}
                         {activeTab === 'overview' && (
                             <div className="space-y-8">
-                                {/* 1. Stats Overview (Moved Here) */}
                                 <PracticumStats enrollment={enrollment} practicum={practicum} logs={logs} />
 
                                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                                    {/* Left Column: Timeline & Activity */}
                                     <div className="lg:col-span-2 space-y-8">
-
-                                        {/* Embedded Timeline (Week-based) */}
                                         <section>
                                             <div className="flex items-center justify-between mb-4">
                                                 <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
                                                     <Calendar className="w-5 h-5 text-emerald-600" /> Timeline & Milestones
                                                 </h3>
-                                                {(() => {
-                                                    const hiddenLogCount = !showLogs && timeline.events ? timeline.events.filter(e => e.type === 'log').length : 0;
-                                                    return (
-                                                        <button
-                                                            onClick={() => setShowLogs(!showLogs)}
-                                                            className={cn(
-                                                                "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors border",
-                                                                showLogs
-                                                                    ? 'bg-blue-50 text-blue-600 border-blue-200'
-                                                                    : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
-                                                            )}
-                                                        >
-                                                            {showLogs ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                                                            {showLogs ? 'Hide Logs' : 'Show Logs'}
-                                                            {!showLogs && hiddenLogCount > 0 && <span className="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded-full text-[10px]">{hiddenLogCount}</span>}
-                                                        </button>
-                                                    );
-                                                })()}
+                                                <button onClick={() => setShowLogs(!showLogs)} className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold bg-white text-slate-500 border border-slate-200 hover:bg-slate-50 transition-colors">
+                                                    {showLogs ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                                                    {showLogs ? 'Hide Logs' : 'Show Logs'}
+                                                </button>
                                             </div>
 
                                             <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-6">
@@ -381,125 +443,57 @@ export default function StudentPracticumDashboard({ params }: { params: Promise<
                                             </div>
                                         </section>
 
-                                        {/* Recent Activity */}
                                         <section>
                                             <h3 className="text-xl font-bold text-slate-900 mb-4">Recent Activity</h3>
                                             <div className="space-y-3">
-                                                {logs.slice(0, 3).map((log) => {
-                                                    const entries = log.entries as unknown as PracticumLogEntry;
-                                                    return (
-                                                        <div key={log.id} className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between hover:border-emerald-200 transition-colors cursor-pointer" onClick={() => setTab('logs')}>
-                                                            <div className="flex items-center gap-4">
-                                                                <div className="p-3 bg-slate-50 rounded-xl text-slate-400">
-                                                                    <FileText className="w-5 h-5" />
-                                                                </div>
-                                                                <div>
-                                                                    <h4 className="font-bold text-slate-800">Log Entry: {entries?.subject || entries?.main_activity || 'Untitled Log'}</h4>
-                                                                    <p className="text-xs text-slate-500">{new Date(log.log_date).toDateString()}</p>
-                                                                </div>
+                                                {logs.slice(0, 3).map((log) => (
+                                                    <div key={log.id} className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between hover:border-emerald-200 transition-colors cursor-pointer" onClick={() => { setTab('logs'); setSelectedLogId(log.id); }}>
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="p-3 bg-slate-50 rounded-xl text-slate-400"><FileText className="w-5 h-5" /></div>
+                                                            <div>
+                                                                <h4 className="font-bold text-slate-800">Log Entry</h4>
+                                                                <p className="text-xs text-slate-500">{new Date(log.log_date).toDateString()}</p>
                                                             </div>
-                                                            <span className={cn("text-xs font-bold px-3 py-1 rounded-full uppercase",
-                                                                log.supervisor_status === 'verified' ? "bg-emerald-100 text-emerald-700" :
-                                                                    log.supervisor_status === 'rejected' ? "bg-red-100 text-red-700" :
-                                                                        "bg-slate-100 text-slate-500"
-                                                            )}>{log.supervisor_status}</span>
                                                         </div>
-                                                    );
-                                                })}
-                                                {logs.length === 0 && (
-                                                    <div className="text-center py-8 bg-white rounded-2xl border border-dashed border-slate-200">
-                                                        <p className="text-slate-400 font-medium">No activity yet.</p>
-                                                        <button onClick={() => setIsLogModalOpen(true)} className="text-emerald-600 font-bold text-sm mt-2 hover:underline">Create your first entry</button>
+                                                        <span className={cn("text-xs font-bold px-3 py-1 rounded-full",
+                                                            log.supervisor_status === 'verified' ? "bg-emerald-100 text-emerald-700" :
+                                                                log.supervisor_status === 'rejected' ? "bg-red-100 text-red-700" :
+                                                                    log.submission_status === 'draft' ? "bg-amber-100 text-amber-700" :
+                                                                        "bg-blue-100 text-blue-700"
+                                                        )}>{
+                                                                log.submission_status === 'draft' ? 'Draft' :
+                                                                    log.supervisor_status === 'verified' ? 'Verified' :
+                                                                        log.supervisor_status === 'rejected' ? 'Rejected' :
+                                                                            'Submitted'
+                                                            }</span>
                                                     </div>
-                                                )}
+                                                ))}
+                                                {logs.length === 0 && <div className="text-center py-8 text-slate-400">No activity yet.</div>}
                                             </div>
                                         </section>
                                     </div>
 
-                                    {/* Right Column: Supervisor & Quick Resources */}
                                     <div className="space-y-8">
-                                        {/* Supervisor Card */}
                                         <div className="bg-slate-900 text-slate-200 p-6 rounded-3xl relative overflow-hidden">
-                                            <div className="absolute top-0 right-0 p-32 bg-emerald-500/10 rounded-full blur-3xl -mr-16 -mt-16" />
-                                            <h3 className="text-white font-bold text-lg mb-4 flex items-center gap-2">
-                                                <User className="w-5 h-5 text-emerald-400" /> Supervisor
-                                            </h3>
-                                            <div className="space-y-1 mb-6">
-                                                <p className="text-2xl font-black text-white">{supervisor.name || 'Not Assigned'}</p>
-                                                <p className="font-medium text-emerald-400">{supervisor.designation || 'Supervisor'}</p>
-                                                <p className="text-sm opacity-60">{(enrollment.workplace_data as any)?.company_name}</p>
-                                            </div>
-                                            <div className="pt-4 border-t border-slate-800 flex justify-between items-center text-sm">
-                                                <span>Actions:</span>
-                                                <button className="text-white font-bold hover:text-emerald-400 transition-colors text-xs uppercase tracking-wide">
-                                                    Resend Verify Link
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        {/* Quick Resources Link */}
-                                        <div className="bg-emerald-50 p-6 rounded-3xl border border-emerald-100 text-center">
-                                            <BookOpen className="w-10 h-10 text-emerald-600 mx-auto mb-3" />
-                                            <h3 className="font-bold text-emerald-900 mb-1">Downloads</h3>
-                                            <p className="text-emerald-700/80 text-sm mb-4">Access templates and guides.</p>
-                                            <button
-                                                onClick={() => setTab('resources')}
-                                                className="w-full py-2 bg-white text-emerald-600 font-bold rounded-xl shadow-sm hover:shadow-md transition-all text-sm"
-                                            >
-                                                View All Resources
-                                            </button>
+                                            <h3 className="text-white font-bold text-lg mb-4 flex items-center gap-2"><User className="w-5 h-5 text-emerald-400" /> Supervisor</h3>
+                                            <p className="text-2xl font-black text-white mb-1">{supervisor.name || 'Not Assigned'}</p>
+                                            <p className="font-medium text-emerald-400 mb-4">{supervisor.designation || 'Supervisor'}</p>
+                                            <div className="pt-4 border-t border-slate-800"><span className="text-xs uppercase">Actions: Resend Verify Link</span></div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         )}
 
-                        {/* TAB: RUBRICS (Strict Parity with Instructor) */}
                         {activeTab === 'rubrics' && (
                             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 animate-fade-in">
-                                {/* Sidebar Navigation */}
                                 <div className="lg:col-span-1 space-y-2">
-                                    <button
-                                        onClick={() => setRubricTab('logs')}
-                                        className={cn("w-full flex items-center gap-3 p-3 rounded-xl text-sm font-bold transition-all",
-                                            rubricTab === 'logs' ? "bg-emerald-600 text-white shadow-md shadow-emerald-200" : "bg-white text-slate-600 hover:bg-slate-50 border border-transparent hover:border-slate-200"
-                                        )}
-                                    >
-                                        <List className="w-5 h-5" />
-                                        <div className="text-left">
-                                            <p>Logs Assessment</p>
-                                            <p className={cn("text-xs font-normal opacity-80", rubricTab === 'logs' ? "text-emerald-100" : "text-slate-400")}>Daily/Weekly Entries</p>
-                                        </div>
-                                    </button>
-
-                                    <button
-                                        onClick={() => setRubricTab('supervisor')}
-                                        className={cn("w-full flex items-center gap-3 p-3 rounded-xl text-sm font-bold transition-all",
-                                            rubricTab === 'supervisor' ? "bg-emerald-600 text-white shadow-md shadow-emerald-200" : "bg-white text-slate-600 hover:bg-slate-50 border border-transparent hover:border-slate-200"
-                                        )}
-                                    >
-                                        <User className="w-5 h-5" />
-                                        <div className="text-left">
-                                            <p>Supervisor Report</p>
-                                            <p className={cn("text-xs font-normal opacity-80", rubricTab === 'supervisor' ? "text-emerald-100" : "text-slate-400")}>Field Assessment</p>
-                                        </div>
-                                    </button>
-
-                                    <button
-                                        onClick={() => setRubricTab('report')}
-                                        className={cn("w-full flex items-center gap-3 p-3 rounded-xl text-sm font-bold transition-all",
-                                            rubricTab === 'report' ? "bg-emerald-600 text-white shadow-md shadow-emerald-200" : "bg-white text-slate-600 hover:bg-slate-50 border border-transparent hover:border-slate-200"
-                                        )}
-                                    >
-                                        <FileText className="w-5 h-5" />
-                                        <div className="text-left">
-                                            <p>Final Report</p>
-                                            <p className={cn("text-xs font-normal opacity-80", rubricTab === 'report' ? "text-emerald-100" : "text-slate-400")}>Project/Thesis</p>
-                                        </div>
-                                    </button>
+                                    {(['logs', 'supervisor', 'report'] as const).map(t => (
+                                        <button key={t} onClick={() => setRubricTab(t)} className={cn("w-full flex items-center gap-3 p-3 rounded-xl text-sm font-bold transition-all", rubricTab === t ? "bg-emerald-600 text-white shadow-md shadow-emerald-200" : "bg-white text-slate-600 hover:bg-slate-50")}>
+                                            <div className="capitalize">{t} Assessment</div>
+                                        </button>
+                                    ))}
                                 </div>
-
-                                {/* Content Area (Using Viewers) */}
                                 <div className="lg:col-span-3">
                                     {rubricTab === 'logs' && <LogsRubricViewer rubric={logsRubric} />}
                                     {rubricTab === 'supervisor' && <SupervisorRubricViewer rubric={supervisorRubric} />}
@@ -508,146 +502,287 @@ export default function StudentPracticumDashboard({ params }: { params: Promise<
                             </div>
                         )}
 
-                        {/* TAB: RESOURCES (New) */}
                         {activeTab === 'resources' && (
                             <div className="bg-white rounded-3xl border border-slate-200 p-8 min-h-[400px]">
                                 <h2 className="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-3">
                                     <BookOpen className="w-6 h-6 text-emerald-500" /> Practicum Resources
                                 </h2>
-
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                     {resources.map((res) => (
-                                        <a
-                                            key={res.id}
-                                            href={res.file_url || '#'}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="group block p-5 rounded-2xl border border-slate-200 hover:border-emerald-300 hover:shadow-md transition-all bg-slate-50 hover:bg-white"
-                                        >
-                                            <div className="flex items-start justify-between mb-3">
-                                                <div className="p-3 bg-white rounded-xl shadow-sm group-hover:bg-emerald-50 transition-colors">
-                                                    <FileText className="w-6 h-6 text-slate-400 group-hover:text-emerald-600" />
-                                                </div>
-                                                <Download className="w-5 h-5 text-slate-300 group-hover:text-emerald-500" />
-                                            </div>
-                                            <h3 className="font-bold text-slate-800 mb-1 group-hover:text-emerald-700 transition-colors truncate">{res.title}</h3>
-                                            <p className="text-xs text-slate-400 flex items-center gap-2">
-                                                <span className="uppercase">{res.mime_type?.split('/')[1] || 'FILE'}</span>
-                                                <span>•</span>
-                                                <span>{(res.size_bytes ? (res.size_bytes / 1024 / 1024).toFixed(2) : '0')} MB</span>
-                                            </p>
+                                        <a key={res.id} href={res.file_url || '#'} target="_blank" className="block p-5 rounded-2xl border border-slate-200 hover:border-emerald-300 transition-all bg-slate-50 hover:bg-white">
+                                            <h3 className="font-bold text-slate-800 mb-1 truncate">{res.title}</h3>
                                         </a>
                                     ))}
-                                    {resources.length === 0 && (
-                                        <div className="col-span-full py-16 text-center border-2 border-dashed border-slate-100 rounded-2xl">
-                                            <BookOpen className="w-12 h-12 text-slate-200 mx-auto mb-3" />
-                                            <p className="text-slate-400 font-medium">No resources have been uploaded by the instructor yet.</p>
-                                        </div>
-                                    )}
+                                    {resources.length === 0 && <div className="col-span-full py-16 text-center text-slate-400 border-2 border-dashed border-slate-100 rounded-2xl">No resources yet.</div>}
                                 </div>
                             </div>
                         )}
 
-                        {/* TAB: LOGS */}
                         {activeTab === 'logs' && (
-                            <div className="space-y-6">
-                                <div className="flex justify-between items-center">
-                                    <h2 className="text-2xl font-bold text-slate-900">Logbook Entries</h2>
-                                    {/* Filters Stub */}
-                                    <select className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold text-slate-600">
-                                        <option>All Weeks</option>
-                                        <option>Week 1</option>
-                                    </select>
+                            <div className="h-[calc(100vh-200px)] min-h-[600px] flex flex-col md:flex-row gap-6 bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
+                                {/* LEFT: Sidebar List */}
+                                <div className="w-full md:w-1/3 border-r border-slate-100 flex flex-col bg-slate-50/50">
+                                    <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-white">
+                                        <h3 className="font-bold text-slate-900">Log Entries</h3>
+                                        <button className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400"><List className="w-4 h-4" /></button>
+                                    </div>
+                                    <div className="overflow-y-auto flex-grow p-3 space-y-2">
+                                        {logs.map(log => {
+                                            const isSelected = selectedLogId === log.id;
+                                            const entries = log.entries as any;
+                                            const title = practicum.log_interval === 'daily'
+                                                ? (entries.subject_taught || entries.tasks_performed || 'Daily Log')
+                                                : `Week ${log.week_number || '?'}`;
+
+                                            return (
+                                                <div key={log.id} onClick={() => setSelectedLogId(log.id)} className={cn("p-3 rounded-xl cursor-pointer border transition-all hover:bg-white hover:shadow-sm", isSelected ? "bg-white border-emerald-500 shadow-md ring-1 ring-emerald-500/20" : "bg-transparent border-transparent hover:border-slate-200")}>
+                                                    <div className="flex justify-between items-start mb-1">
+                                                        <span className="text-xs font-bold text-slate-400">{new Date(log.log_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+                                                        <span className={cn("px-1.5 py-0.5 rounded text-[10px] font-bold uppercase",
+                                                            log.submission_status === 'draft' ? "bg-amber-100 text-amber-700" :
+                                                                log.supervisor_status === 'verified' ? "bg-emerald-100 text-emerald-700" :
+                                                                    log.supervisor_status === 'rejected' ? "bg-red-100 text-red-700" :
+                                                                        "bg-blue-100 text-blue-700"
+                                                        )}>{
+                                                                log.submission_status === 'draft' ? 'Draft' :
+                                                                    log.supervisor_status === 'verified' ? 'Verified' :
+                                                                        log.supervisor_status === 'rejected' ? 'Rejected' :
+                                                                            'Submitted'
+                                                            }</span>
+                                                    </div>
+                                                    <h4 className={cn("font-bold text-sm", isSelected ? "text-emerald-700" : "text-slate-700")}>{title}</h4>
+                                                    <p className="text-xs text-slate-500 line-clamp-1 mt-1">{log.weekly_reflection || entries.notes || "No summary provided."}</p>
+                                                </div>
+                                            );
+                                        })}
+                                        {logs.length === 0 && <div className="text-center py-10 text-slate-400 text-sm">No logs found.</div>}
+                                    </div>
                                 </div>
 
-                                <div className="space-y-4">
-                                    {logs.map((log) => {
-                                        const entries = log.entries as unknown as PracticumLogEntry;
+                                {/* RIGHT: Detail View */}
+                                <div className="w-full md:w-2/3 flex flex-col bg-white">
+                                    {selectedLogId ? (() => {
+                                        const log = logs.find(l => l.id === selectedLogId)!;
+                                        const entries = log.entries as any;
+                                        const isComposite = practicum.log_interval !== 'daily';
+                                        const isDraft = log.submission_status === 'draft';
+
                                         return (
-                                            <div key={log.id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:border-emerald-300 transition-all flex flex-col md:flex-row gap-6">
-                                                {/* Left: Date Box */}
-                                                <div className="flex-none flex md:flex-col items-center justify-center bg-slate-50 rounded-xl w-full md:w-24 p-3 border border-slate-100">
-                                                    <span className="text-xs font-bold text-slate-400 uppercase">{new Date(log.log_date).toLocaleString('default', { month: 'short' })}</span>
-                                                    <span className="text-2xl font-black text-slate-800">{new Date(log.log_date).getDate()}</span>
-                                                    <span className="text-xs font-medium text-slate-400">{new Date(log.log_date).toLocaleString('default', { weekday: 'short' })}</span>
+                                            <div className="flex-grow overflow-y-auto p-6 md:p-8 animate-fade-in">
+                                                {/* Header */}
+                                                <div className="flex justify-between items-start mb-6">
+                                                    <div>
+                                                        <h2 className="text-2xl font-black text-slate-900">
+                                                            {isComposite ? `Week ${log.week_number || '?'}` : (entries.subject_taught || entries.tasks_performed || 'Daily Entry')}
+                                                        </h2>
+                                                        <p className="text-slate-500 font-medium flex items-center gap-2 mt-1">
+                                                            <Calendar className="w-4 h-4" /> {new Date(log.log_date).toDateString()}
+                                                            {!isComposite && <span className="flex items-center gap-1 ml-2"><Clock className="w-4 h-4" /> {log.clock_in ? new Date(log.clock_in).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'} - {log.clock_out ? new Date(log.clock_out).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}</span>}
+                                                        </p>
+                                                    </div>
+
+                                                    <div className="flex flex-col items-end gap-2">
+                                                        <div className={cn("px-4 py-2 rounded-xl border flex flex-col items-center",
+                                                            log.supervisor_status === 'verified' ? "bg-emerald-50 border-emerald-100 text-emerald-700" :
+                                                                log.supervisor_status === 'rejected' ? "bg-red-50 border-red-100 text-red-700" :
+                                                                    log.submission_status === 'draft' ? "bg-amber-50 border-amber-100 text-amber-700" :
+                                                                        "bg-blue-50 border-blue-100 text-blue-700"
+                                                        )}>
+                                                            <span className="text-[10px] uppercase font-bold tracking-wider">Status</span>
+                                                            <span className="font-black text-sm">{
+                                                                log.submission_status === 'draft' ? 'Draft' :
+                                                                    log.supervisor_status === 'verified' ? 'Verified' :
+                                                                        log.supervisor_status === 'rejected' ? 'Rejected' :
+                                                                            'Submitted'
+                                                            }</span>
+                                                        </div>
+                                                        {isDraft && (
+                                                            <div className="flex gap-2">
+                                                                <button onClick={() => handleDeleteLog(log.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
+                                                                <button onClick={() => handleSubmission(log.id)} className="px-4 py-2 bg-emerald-600 text-white text-xs font-bold rounded-lg shadow hover:bg-emerald-700 transition-colors flex items-center gap-2">
+                                                                    <Send className="w-3 h-3" /> Submit for Assessment
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
 
-                                                {/* Middle: Content */}
-                                                <div className="flex-grow space-y-2">
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        <span className={cn("w-2 h-2 rounded-full",
-                                                            log.supervisor_status === 'verified' ? "bg-emerald-500" :
-                                                                log.supervisor_status === 'rejected' ? "bg-red-500" : "bg-slate-300"
-                                                        )} />
-                                                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wide">{log.supervisor_status}</span>
-                                                    </div>
-                                                    <h3 className="text-lg font-bold text-slate-900">{entries?.subject || entries?.main_activity || 'Log Entry'}</h3>
-                                                    <p className="text-slate-600 line-clamp-2 text-sm">
-                                                        {entries?.notes || entries?.reflection || "No details provided."}
-                                                    </p>
-                                                    <div className="flex gap-4 text-xs font-medium text-slate-400 pt-2">
-                                                        <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {log.clock_in ? new Date(log.clock_in).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'} - {log.clock_out ? new Date(log.clock_out).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}</span>
-                                                    </div>
-                                                </div>
+                                                {/* Composite View: Builder vs Read-Only */}
+                                                {isComposite ? (
+                                                    <div className="space-y-6">
+                                                        {/* Reflection Card */}
+                                                        <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100">
+                                                            <div className="flex justify-between items-start">
+                                                                <h4 className="font-bold text-slate-800 mb-2 flex items-center gap-2">
+                                                                    <FileText className="w-4 h-4 text-emerald-600" /> Weekly Reflection
+                                                                </h4>
+                                                                {isDraft && <button className="text-xs font-bold text-emerald-600 hover:underline">Edit</button>}
+                                                            </div>
+                                                            <p className="text-slate-700 text-sm leading-relaxed whitespace-pre-wrap">
+                                                                {log.weekly_reflection || "No reflection provided."}
+                                                            </p>
+                                                        </div>
 
-                                                {/* Right: Actions */}
-                                                <div className="flex-none flex items-center">
-                                                    <button className="text-slate-400 hover:text-emerald-600 p-2 hover:bg-slate-50 rounded-lg transition-colors">
-                                                        <ChevronRight className="w-5 h-5" />
-                                                    </button>
-                                                </div>
+                                                        {/* Interactive Builder */}
+                                                        <div className="border border-slate-200 rounded-xl overflow-hidden">
+                                                            <div className="bg-slate-50 p-3 border-b border-slate-200 flex justify-between items-center">
+                                                                <span className="font-bold text-xs uppercase text-slate-500 tracking-wider">Daily Entries</span>
+                                                                {isDraft && (
+                                                                    <div className="flex gap-2">
+                                                                        <button
+                                                                            className="text-xs font-bold text-slate-500 flex items-center gap-1 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition-colors"
+                                                                        >
+                                                                            <Edit2 className="w-3.5 h-3.5" /> Edit
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => handleEditDay(new Date().toISOString().split('T')[0], {}, log.week_number || undefined)}
+                                                                            className="text-xs font-bold text-emerald-600 flex items-center gap-1 hover:bg-emerald-50 px-3 py-1.5 rounded-lg transition-colors border border-emerald-200 bg-white"
+                                                                        >
+                                                                            <Plus className="w-3.5 h-3.5" /> Add Day
+                                                                        </button>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                            <div className="overflow-x-auto">
+                                                                <table className="w-full text-sm text-left">
+                                                                    <thead className="bg-white border-b border-slate-100 text-slate-500">
+                                                                        <tr>
+                                                                            <th className="p-3 font-bold w-24">Date</th>
+                                                                            {practicum.log_template === 'teaching_practice' ? (
+                                                                                <>
+                                                                                    <th className="p-3 font-bold w-24">Class</th>
+                                                                                    <th className="p-3 font-bold w-32">Subject</th>
+                                                                                    <th className="p-3 font-bold w-1/4">Topic</th>
+                                                                                    <th className="p-3 font-bold">Observations</th>
+                                                                                </>
+                                                                            ) : (
+                                                                                <>
+                                                                                    <th className="p-3 font-bold w-32">Dept.</th>
+                                                                                    <th className="p-3 font-bold w-1/4">Tasks</th>
+                                                                                    <th className="p-3 font-bold w-1/4">Skills</th>
+                                                                                    <th className="p-3 font-bold">Challenges</th>
+                                                                                </>
+                                                                            )}
+                                                                        </tr>
+                                                                    </thead>
+                                                                    <tbody className="divide-y divide-slate-50">
+                                                                        {entries.days?.map((day: any, idx: number) => (
+                                                                            <tr
+                                                                                key={idx}
+                                                                                onClick={() => isDraft && handleEditDay(day.date, day, log.week_number || undefined)}
+                                                                                className={cn(
+                                                                                    "transition-colors",
+                                                                                    isDraft ? "hover:bg-emerald-50/30 cursor-pointer group" : "hover:bg-slate-50/50"
+                                                                                )}
+                                                                            >
+                                                                                <td className="p-3 font-medium text-slate-900 whitespace-nowrap align-top">
+                                                                                    {new Date(day.date).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric' })}
+                                                                                </td>
+                                                                                {practicum.log_template === 'teaching_practice' ? (
+                                                                                    <>
+                                                                                        <td className="p-3 text-slate-600 align-top">{day.class_taught || '-'}</td>
+                                                                                        <td className="p-3 text-slate-600 align-top">{day.subject_taught || '-'}</td>
+                                                                                        <td className="p-3 text-slate-600 align-top">{day.lesson_topic || '-'}</td>
+                                                                                        <td className="p-3 text-slate-600 align-top text-xs leading-relaxed min-w-[200px]">{day.observations || '-'}</td>
+                                                                                    </>
+                                                                                ) : (
+                                                                                    <>
+                                                                                        <td className="p-3 text-slate-600 align-top">{day.department || '-'}</td>
+                                                                                        <td className="p-3 text-slate-600 align-top text-xs leading-relaxed max-w-[200px]">{day.tasks_performed || '-'}</td>
+                                                                                        <td className="p-3 text-slate-600 align-top text-xs leading-relaxed max-w-[200px]">{day.skills_acquired || '-'}</td>
+                                                                                        <td className="p-3 text-slate-600 align-top text-xs leading-relaxed max-w-[200px]">{day.challenges || '-'}</td>
+                                                                                    </>
+                                                                                )}
+                                                                            </tr>
+                                                                        ))}
+                                                                        {(!entries.days || entries.days.length === 0) && (
+                                                                            <tr>
+                                                                                <td colSpan={5} className="p-8 text-center text-slate-400 italic">
+                                                                                    No entries for this week yet. Click below to add.
+                                                                                </td>
+                                                                            </tr>
+                                                                        )}
+                                                                    </tbody>
+                                                                </table>
+                                                            </div>
+                                                            {/* Footer Add Button */}
+                                                            {isDraft && (
+                                                                <div className="bg-slate-50 p-4 border-t border-slate-200 flex justify-center">
+                                                                    <button
+                                                                        onClick={() => handleEditDay(new Date().toISOString().split('T')[0], {}, log.week_number || undefined)}
+                                                                        className="w-10 h-10 rounded-full bg-emerald-600 text-white flex items-center justify-center shadow-lg hover:bg-emerald-700 hover:scale-110 transition-all"
+                                                                    >
+                                                                        <Plus className="w-6 h-6" />
+                                                                    </button>
+                                                                </div>
+                                                            )}
+
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    // Daily View Details
+                                                    <div className="space-y-6">
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                            {practicum.log_template === 'teaching_practice' ? (
+                                                                <>
+                                                                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                                                        <label className="text-xs font-bold text-slate-400 uppercase">Subject</label>
+                                                                        <p className="font-bold text-slate-800">{entries.subject_taught}</p>
+                                                                    </div>
+                                                                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                                                        <label className="text-xs font-bold text-slate-400 uppercase">Class</label>
+                                                                        <p className="font-bold text-slate-800">{entries.class_taught}</p>
+                                                                    </div>
+                                                                </>
+                                                            ) : (
+                                                                <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                                                    <label className="text-xs font-bold text-slate-400 uppercase">Department</label>
+                                                                    <p className="font-bold text-slate-800">{entries.department}</p>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100">
+                                                            <h4 className="font-bold text-slate-800 mb-2">Activities</h4>
+                                                            <p className="text-slate-700 whitespace-pre-wrap leading-relaxed">{entries.tasks_performed || entries.observations || entries.notes || "No content."}</p>
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         );
-                                    })}
-                                    {logs.length === 0 && (
-                                        <div className="text-center py-16 bg-white rounded-3xl border border-dashed border-slate-200">
-                                            <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300">
-                                                <FileText className="w-8 h-8" />
-                                            </div>
-                                            <h3 className="text-lg font-bold text-slate-800">No logs yet</h3>
-                                            <p className="text-slate-500 mb-6 max-w-sm mx-auto">Start documenting your daily activities to stay on track with your practicum.</p>
-                                            <button onClick={() => setIsLogModalOpen(true)} className="bg-emerald-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-emerald-700 transition-colors">
-                                                Create First Entry
-                                            </button>
+                                    })() : (
+                                        <div className="flex-grow flex flex-col items-center justify-center text-slate-300 p-10">
+                                            <FileText className="w-16 h-16 opacity-20 mb-4" />
+                                            <p className="font-bold text-slate-400">Select a log entry to view details</p>
                                         </div>
                                     )}
                                 </div>
                             </div>
                         )}
 
-                        {/* TAB: REPORT */}
                         {activeTab === 'report' && (
                             <div className="bg-white rounded-3xl border border-slate-200 p-8 md:p-12 text-center">
-                                <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                                    <Upload className="w-10 h-10 text-slate-300" />
-                                </div>
                                 <h2 className="text-2xl font-bold text-slate-900 mb-2">Final Practicum Report</h2>
-                                <p className="text-slate-500 max-w-lg mx-auto mb-8">
-                                    Upload your final comprehensive report here. This contributes 30% to your final grade.
-                                    Ensure you follow the template provided in the Resources tab.
-                                </p>
-
+                                <p className="text-slate-500 max-w-lg mx-auto mb-8">Upload your final comprehensive report here.</p>
                                 <div className="max-w-xl mx-auto border-2 border-dashed border-slate-200 rounded-2xl p-8 hover:border-emerald-400 hover:bg-emerald-50/10 transition-all cursor-pointer group">
-                                    <p className="font-bold text-slate-700 group-hover:text-emerald-700">Drag and drop your report (PDF) here</p>
-                                    <p className="text-sm text-slate-400 mt-2">Max file size: 10MB</p>
-                                    <button className="mt-6 px-6 py-2 bg-slate-900 text-white rounded-lg font-bold text-sm hover:bg-emerald-600 transition-colors">
-                                        Browse Files
-                                    </button>
+                                    <p className="font-bold text-slate-700 group-hover:text-emerald-700">Drag and drop your report (PDF)</p>
                                 </div>
                             </div>
                         )}
-
                     </div>
                 </div>
-            </div>
 
-            {/* Modals */}
-            <LogEntryModal
-                isOpen={isLogModalOpen}
-                onClose={() => setIsLogModalOpen(false)}
-                practicumId={id}
-                templateType={practicum.log_template as LogTemplateType}
-            />
-        </div>
+                <LogEntryModal
+                    isOpen={isLogModalOpen}
+                    onClose={() => setIsLogModalOpen(false)}
+                    practicumId={id}
+                    templateType={practicum.log_template as LogTemplateType}
+                    logInterval={practicum.log_interval as LogFrequency}
+                    weekNumber={targetWeekNumber}
+                    initialDate={editingLogDate}
+                    initialData={editingLogData}
+                    onSuccess={fetchDashboardData}
+                />
+            </div>
+        </div >
     );
 }

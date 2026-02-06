@@ -214,21 +214,34 @@ export default function PracticumSetupPage({ params }: { params: Promise<{ id: s
     const handleFieldChange = (section: string, field: string, value: any) => {
         setIsDirty(true);
         // Clear error when field changes
-        if (errors[`${section}.${field}`]) {
+        // If section is empty, key is just 'field', else 'section.field'
+        const errorKey = section ? `${section}.${field}` : field;
+
+        if (errors[errorKey]) {
             setErrors(prev => {
                 const next = { ...prev };
-                delete next[`${section}.${field}`];
+                delete next[errorKey];
                 return next;
             });
         }
 
-        setFormData(prev => ({
-            ...prev,
-            [section]: {
-                ...(prev as any)[section],
-                [field]: value
+        setFormData(prev => {
+            if (!section) {
+                // Top-level update
+                return {
+                    ...prev,
+                    [field]: value
+                };
             }
-        }));
+            // Nested update
+            return {
+                ...prev,
+                [section]: {
+                    ...(prev as any)[section],
+                    [field]: value
+                }
+            };
+        });
     };
 
     const validateSection = (sectionId: string): boolean => {

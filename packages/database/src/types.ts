@@ -603,10 +603,12 @@ export type Database = {
           file_urls: string[] | null
           grade: number | null
           id: string
+          instructor_status: string
           location_data: Json | null
           log_date: string
           practicum_id: string
           student_id: string
+          submission_status: string
           supervisor_comment: string | null
           supervisor_status: string
           supervisor_verified_at: string | null
@@ -624,10 +626,12 @@ export type Database = {
           file_urls?: string[] | null
           grade?: number | null
           id?: string
+          instructor_status?: string
           location_data?: Json | null
           log_date: string
           practicum_id: string
           student_id: string
+          submission_status?: string
           supervisor_comment?: string | null
           supervisor_status?: string
           supervisor_verified_at?: string | null
@@ -645,10 +649,12 @@ export type Database = {
           file_urls?: string[] | null
           grade?: number | null
           id?: string
+          instructor_status?: string
           location_data?: Json | null
           log_date?: string
           practicum_id?: string
           student_id?: string
+          submission_status?: string
           supervisor_comment?: string | null
           supervisor_status?: string
           supervisor_verified_at?: string | null
