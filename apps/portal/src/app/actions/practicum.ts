@@ -8,17 +8,22 @@ import { Database } from "@schologic/database";
 
 const resend = new Resend(process.env.RESEND_API_KEY!);
 
-// Admin client for privileged operations (bypassing RLS for supervisor actions)
-const supabaseAdmin = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    {
+// Helper for admin operations
+function getAdminClient() {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!url || !key) {
+        throw new Error("Missing Supabase Admin credentials");
+    }
+
+    return createClient(url, key, {
         auth: {
             autoRefreshToken: false,
             persistSession: false
         }
-    }
-);
+    });
+}
 
 /**
  * Sends a verification email to the supervisor linked to this log's student/practicum.
@@ -29,7 +34,8 @@ export async function sendSupervisorVerificationEmail(logId: string) {
         const headerStore = await headers();
 
         // 1. Fetch Log & Student Info
-        // We use admin client to ensure we can read even if RLS somehow restricts (though usually student owns it)
+        // We use admin client to ensure we can read even if RLS somehow restricts
+        const supabaseAdmin = getAdminClient();
         const { data: log, error: logError } = await supabaseAdmin
             .from('practicum_logs')
             .select(`
@@ -122,6 +128,7 @@ export async function verifyLogAction(
         if (!token) throw new Error("Token required");
 
         // 1. Find Log by Token (Using Admin Client to bypass RLS)
+        const supabaseAdmin = getAdminClient();
         const { data: log, error: findError } = await supabaseAdmin
             .from('practicum_logs')
             .select('id, supervisor_status')
