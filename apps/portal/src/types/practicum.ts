@@ -2,6 +2,8 @@
 export interface PracticumLogEntry {
     // Shared / Daily simple fields
     date?: string; // For composite days
+    clock_in?: string;
+    clock_out?: string;
 
     // Teaching Practice Fields (Strict)
     office_activities?: string;

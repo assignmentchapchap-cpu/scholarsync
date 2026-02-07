@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { X, Calendar, Clock, Save, Loader2, Upload, AlertCircle, Plus } from 'lucide-react';
 import { createClient } from "@schologic/database";
 import { useToast } from '@/context/ToastContext';
@@ -17,12 +17,26 @@ interface LogEntryModalProps {
     weekNumber?: number;
     initialDate?: string; // Specific date being edited
     initialData?: PracticumLogEntry; // Data for that day
-    onSuccess?: () => void;
+    onSuccess: () => void;
+    // Strict Date Logic Props
+    weekStart?: string; // Monday of the target week
+    scheduleDays?: string[]; // Allowed days e.g. ['Mon', 'Tue']
+    existingDates?: string[]; // Dates already logged in this container
 }
 
 export default function LogEntryModal({
-    isOpen, onClose, practicumId, templateType, logInterval,
-    weekNumber, initialDate, initialData, onSuccess
+    isOpen,
+    onClose,
+    practicumId,
+    templateType,
+    logInterval,
+    weekNumber,
+    initialDate,
+    initialData,
+    onSuccess,
+    weekStart,
+    scheduleDays = [],
+    existingDates = []
 }: LogEntryModalProps) {
     const { showToast } = useToast();
     const router = useRouter();
@@ -30,122 +44,163 @@ export default function LogEntryModal({
 
     const [submitting, setSubmitting] = useState(false);
 
+    // Compute Available Dates
+    const availableDates = useMemo(() => {
+        if (!weekStart) return [];
+
+        const dates: { date: string, label: string }[] = [];
+        const start = new Date(weekStart);
+
+        // Generate 7 days
+        for (let i = 0; i < 7; i++) {
+            const current = new Date(start);
+            current.setDate(start.getDate() + i);
+
+            const iso = current.toISOString().split('T')[0];
+            const dayName = current.toLocaleDateString('en-US', { weekday: 'short' }); // "Mon", "Tue"
+
+            // 1. Check Schedule (if provided)
+            if (scheduleDays.length > 0 && !scheduleDays.includes(dayName)) continue;
+
+            // 2. Check Duplicates (unless we are editing THIS specific date)
+            if (!initialDate && existingDates.includes(iso)) continue;
+
+            dates.push({
+                date: iso,
+                label: `${dayName}, ${current.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`
+            });
+        }
+        return dates;
+    }, [weekStart, scheduleDays, existingDates, initialDate]);
+
     // State is always single-day now
-    const [date, setDate] = useState(initialDate || new Date().toISOString().split('T')[0]);
-    const [clockIn, setClockIn] = useState('08:00');
-    const [clockOut, setClockOut] = useState('17:00');
-    const [entry, setEntry] = useState<PracticumLogEntry>(initialData || {});
+    const [date, setDate] = useState(initialDate || '');
+    const [clockIn, setClockIn] = useState(initialData?.clock_in ? new Date(initialData.clock_in).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '08:00');
+    const [clockOut, setClockOut] = useState(initialData?.clock_out ? new Date(initialData.clock_out).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '17:00');
+    const [entry, setEntry] = useState<Partial<PracticumLogEntry>>(initialData || {});
 
     // Reset state when opening/changing target
     useEffect(() => {
         if (isOpen) {
-            setDate(initialDate || new Date().toISOString().split('T')[0]);
             setEntry(initialData || {});
+            setClockIn(initialData?.clock_in ? new Date(initialData.clock_in).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '08:00');
+            setClockOut(initialData?.clock_out ? new Date(initialData.clock_out).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '17:00');
 
-            // Extract time if exists in initialData?? 
-            // Currently initialData is just the fields, times are separate columns usually.
-            // But for composite sub-entries, they might be in the object.
-            // For now default to 8-5.
+            if (initialDate) {
+                setDate(initialDate);
+            } else if (availableDates.length > 0) {
+                setDate(availableDates[0].date);
+            } else {
+                setDate(''); // No dates available
+            }
         }
-    }, [isOpen, initialDate, initialData]);
+    }, [isOpen, initialDate, initialData, availableDates]);
 
-    const handleChange = (field: keyof PracticumLogEntry, value: string) => {
+    const handleChange = (field: keyof PracticumLogEntry, value: any) => {
         setEntry(prev => ({ ...prev, [field]: value }));
     };
 
-    const handleSubmit = async (e: React.FormEvent | null, mode: 'exit' | 'new' = 'exit') => {
+    const handleSubmit = async (e: React.FormEvent | null, action: 'new' | 'exit' = 'exit') => {
         if (e) e.preventDefault();
+
+        if (!date) {
+            showToast("Please select a date", "error");
+            return;
+        }
+
         setSubmitting(true);
 
         try {
             const { data: { user } } = await supabase.auth.getUser();
-            if (!user) throw new Error("Not authenticated");
+            if (!user) throw new Error("Authentication required");
 
-            // Payload Prep
-            const clockInIso = new Date(`${date}T${clockIn}`).toISOString();
-            const clockOutIso = new Date(`${date}T${clockOut}`).toISOString();
+            // Build full ISO strings for clock in/out
+            const clockInIso = `${date}T${clockIn}:00`;
+            const clockOutIso = `${date}T${clockOut}:00`;
 
-            const payload: any = {
-                student_id: user.id,
-                practicum_id: practicumId,
-                submission_status: 'draft',
-                log_date: date,
-            };
+            // 1. Get or Create the Log Container (Daily or Weekly)
+            let logId = '';
 
             if (logInterval === 'daily') {
                 // Standard Daily Log
-                Object.assign(payload, {
+                const payload: any = {
+                    student_id: user.id,
+                    practicum_id: practicumId,
+                    submission_status: 'draft',
+                    log_date: date,
                     clock_in: clockInIso,
                     clock_out: clockOutIso,
                     entries: entry
-                });
+                };
 
-                // Upsert on Date + Student + Practicum
-                // We need a unique constraint or just check existence.
                 const { error } = await supabase.from('practicum_logs').upsert(payload, { onConflict: 'student_id, practicum_id, log_date' });
                 if (error) throw error;
 
             } else {
-                // Composite Upsert Logic (Weekly/Monthly)
-                // 1. Find the container
-                let query = supabase.from('practicum_logs')
+                // Weekly/Monthly: We need to find the existing log container for this week
+                // If we passed weekNumber, use it. Otherwise, query by date. (Ideally weekNumber is passed)
+
+                // For simplicity in this modal, we assume the parent passed the correct weekNumber if it exists.
+                // If not, we query the log that covers this date? 
+                // Better approach: The parent creates the "Log Container" first.
+                // This modal effectively "UPSERTS" a day entry into the JSONB `entries` column.
+
+                // Fetch the log for the target week
+                if (!weekNumber) throw new Error("Week number required for weekly logs");
+
+                const { data: existingLog, error: fetchError } = await supabase
+                    .from('practicum_logs')
                     .select('*')
+                    .eq('practicum_id', practicumId)
                     .eq('student_id', user.id)
-                    .eq('practicum_id', practicumId);
+                    .eq('week_number', weekNumber)
+                    .single();
 
-                if (weekNumber) query = query.eq('week_number', weekNumber);
+                if (fetchError && fetchError.code !== 'PGRST116') throw fetchError;
 
-                const { data: existing } = await query.single();
+                if (!existingLog) {
+                    // This should ideally not happen if parent creates it, but fallback:
+                    throw new Error("Log container for this week not found. Please start the week first.");
+                }
 
-                let newEntries: any = existing?.entries || { days: [] };
-                if (!newEntries.days) newEntries.days = [];
+                logId = existingLog.id;
+                const currentDays = (existingLog.entries as any)?.days || [];
 
-                // 2. Merge this day
-                const dayIndex = newEntries.days.findIndex((d: any) => d.date === date);
-                const dayData = { date, ...entry };
+                // Remove existing entry for this date if we are editing
+                const otherDays = currentDays.filter((d: any) => d.date !== date);
 
-                if (dayIndex >= 0) newEntries.days[dayIndex] = dayData;
-                else newEntries.days.push(dayData);
-
-                // Sort
-                newEntries.days.sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
-                const compositePayload = {
-                    student_id: user.id,
-                    practicum_id: practicumId,
-                    week_number: weekNumber,
-                    log_date: weekNumber ? new Date().toISOString() : date,
-                    submission_status: 'draft',
-                    entries: newEntries
+                const newDayEntry = {
+                    ...entry,
+                    date,
+                    clock_in: clockInIso,
+                    clock_out: clockOutIso
                 };
 
-                // Upsert on Week Number?? Table doesn't have unique constraint on week_number alone.
-                // We rely on ID if exists.
-                if (existing?.id) {
-                    const { error } = await supabase.from('practicum_logs').update({ entries: newEntries, submission_status: 'draft' }).eq('id', existing.id);
-                    if (error) throw error;
-                } else {
-                    const { error } = await supabase.from('practicum_logs').insert(compositePayload);
-                    if (error) throw error;
-                }
+                // Add new/updated entry and sort by date
+                const updatedDays = [...otherDays, newDayEntry].sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+                const { error: updateError } = await supabase
+                    .from('practicum_logs')
+                    .update({
+                        entries: { ...(existingLog.entries as any || {}), days: updatedDays }
+                    })
+                    .eq('id', logId);
+
+                if (updateError) throw updateError;
             }
 
-            showToast("Saved to Draft", "success");
+            showToast("Log entry saved successfully", "success");
+            onSuccess();
 
-            if (onSuccess) onSuccess(); // Always refresh parent
-
-            if (mode === 'exit') {
-                router.refresh(); // Ensure strict refresh
-                onClose();
-            } else {
-                // Reset for new entry
-                // Keep date same? Or maybe user wants to add same day different content? 
-                // Usually for daily logs it's one per day. For composite, maybe next day?
-                // Let's just reset content.
+            if (action === 'new') {
+                // Find next available date
+                const currentIndex = availableDates.findIndex(d => d.date === date);
+                if (currentIndex >= 0 && currentIndex < availableDates.length - 1) {
+                    setDate(availableDates[currentIndex + 1].date);
+                }
                 setEntry({});
-                // Note: We don't auto-increment date because that's complex to guess. 
-                // User can change date manually.
-                router.refresh();
+            } else {
+                onClose();
             }
 
         } catch (error: any) {
@@ -172,7 +227,7 @@ export default function LogEntryModal({
                         <p className="text-sm text-slate-500 font-medium mt-1 flex items-center gap-2">
                             <span className="capitalize">{logInterval} Log</span>
                             <span className="text-slate-300">•</span>
-                            <span className="text-emerald-600 font-semibold">{date}</span>
+                            <span className="text-emerald-600 font-semibold">{date || 'Select Date'}</span>
                         </p>
                     </div>
                     <button onClick={onClose} className="p-2 -mr-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-colors">
@@ -188,14 +243,26 @@ export default function LogEntryModal({
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div className="space-y-2">
                                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2 mb-1.5"><Calendar className="w-4 h-4 text-emerald-500" /> Date</label>
-                                <input
-                                    type="date"
-                                    required
-                                    value={date}
-                                    onChange={e => setDate(e.target.value)}
-                                    disabled={!!initialDate}
-                                    className="w-full bg-white border border-slate-300 shadow-sm rounded-xl px-4 py-3.5 text-sm font-medium text-slate-900 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all hover:border-emerald-300 placeholder:text-slate-400"
-                                />
+                                {initialDate ? (
+                                    <div className="w-full bg-slate-100 border border-slate-200 shadow-sm rounded-xl px-4 py-3.5 text-sm font-bold text-slate-500 cursor-not-allowed">
+                                        {new Date(initialDate).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+                                    </div>
+                                ) : (
+                                    <select
+                                        required
+                                        value={date}
+                                        onChange={e => setDate(e.target.value)}
+                                        className="w-full bg-white border border-slate-300 shadow-sm rounded-xl px-4 py-3.5 text-sm font-medium text-slate-900 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all hover:border-emerald-300 placeholder:text-slate-400"
+                                    >
+                                        <option value="" disabled>Select Day</option>
+                                        {availableDates.map(d => (
+                                            <option key={d.date} value={d.date}>{d.label}</option>
+                                        ))}
+                                    </select>
+                                )}
+                                {!initialDate && availableDates.length === 0 && (
+                                    <p className="text-xs text-red-500 font-medium mt-1">No available days remaining this week.</p>
+                                )}
                             </div>
                             <div className="space-y-2">
                                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2 mb-1.5"><Clock className="w-4 h-4 text-slate-400" /> Start Time</label>

@@ -7,7 +7,7 @@ import {
     ArrowLeft, Calendar, MapPin, User,
     BookOpen, Layers, CheckCircle2, Clock,
     FileText, Download, Upload, ChevronRight, AlertCircle,
-    List, Eye, EyeOff, Plus, Edit2, Send, Trash2, Loader2
+    List, Eye, EyeOff, Plus, Edit2, Send, Trash2, Loader2, Save
 } from 'lucide-react';
 import Link from 'next/link';
 import { Card } from '@/components/ui/Card';
@@ -22,7 +22,8 @@ import {
     LOGS_ASSESSMENT_RUBRIC,
     TEACHING_PRACTICE_OBSERVATION_GUIDE,
     INDUSTRIAL_ATTACHMENT_OBSERVATION_GUIDE,
-    PRACTICUM_REPORT_SCORE_SHEET
+    PRACTICUM_REPORT_SCORE_SHEET,
+    generateTimeline
 } from "@schologic/practicum-core";
 
 type Practicum = Database['public']['Tables']['practicums']['Row'];
@@ -55,6 +56,36 @@ export default function StudentPracticumDashboard({ params }: { params: Promise<
     const [rubricTab, setRubricTab] = useState<'logs' | 'supervisor' | 'report'>('logs');
     const [selectedLogId, setSelectedLogId] = useState<string | null>(null);
     const [logFilter, setLogFilter] = useState<'all' | 'draft' | 'pending'>('all');
+
+    const handleSaveReflection = async () => {
+        if (!editingReflectionLogId) return;
+        setSavingReflection(true);
+        try {
+            const { error } = await supabase
+                .from('practicum_logs')
+                .update({ weekly_reflection: reflectionText })
+                .eq('id', editingReflectionLogId);
+
+            if (error) throw error;
+            showToast("Reflection updated successfully", "success");
+            setEditingReflectionLogId(null);
+            fetchDashboardData();
+        } catch (e: any) {
+            console.error(e);
+            showToast("Failed to save reflection", "error");
+        } finally {
+            setSavingReflection(false);
+        }
+    };
+
+    // Date Range State for Modal
+    const [modalMinDate, setModalMinDate] = useState<string | undefined>(undefined);
+    const [modalMaxDate, setModalMaxDate] = useState<string | undefined>(undefined);
+
+    // Reflection Editing State
+    const [editingReflectionLogId, setEditingReflectionLogId] = useState<string | null>(null);
+    const [reflectionText, setReflectionText] = useState('');
+    const [savingReflection, setSavingReflection] = useState(false);
 
     const fetchDashboardData = async () => {
         try {
@@ -120,25 +151,68 @@ export default function StudentPracticumDashboard({ params }: { params: Promise<
             setEditingLogDate(undefined);
             setEditingLogData(undefined);
             setTargetWeekNumber(undefined);
+            setModalMinDate(undefined);
+            setModalMaxDate(undefined);
             setIsLogModalOpen(true);
         } else {
-            // Weekly/Monthly Logic: Create new container
-            if (!confirm(`Start a new ${practicum.log_interval} log entry?`)) return;
+            // Weekly/Monthly Logic: Enforce Current Week
+
+            // 1. Calculate Current Week Number relative to Start Date (Monday Aligned)
+            const getMonday = (d: Date) => {
+                const d2 = new Date(d);
+                const day = d2.getDay();
+                const diff = d2.getDate() - day + (day === 0 ? -6 : 1);
+                return new Date(d2.setDate(diff));
+            };
+
+            const startDate = new Date(practicum.start_date);
+            const startMonday = getMonday(startDate);
+            startMonday.setHours(0, 0, 0, 0);
+
+            const today = new Date();
+            const todayMonday = getMonday(today);
+            todayMonday.setHours(0, 0, 0, 0);
+
+            // Calculate week number (1-based)
+            const msPerWeek = 1000 * 60 * 60 * 24 * 7;
+            const diffMs = todayMonday.getTime() - startMonday.getTime();
+            const currentWeekNum = Math.floor(diffMs / msPerWeek) + 1;
+
+            if (currentWeekNum < 1) {
+                showToast("Practicum has not started yet.", "error");
+                return;
+            }
+
+            // Optional: Check if practicum ended, but maybe allow late entries? 
+            // For now, strict 'current week' implies you can't create weeks endlessly in future.
+
+            const existingLog = logs.find(l => l.week_number === currentWeekNum);
+
+            if (existingLog) {
+                // Log already exists, just open it
+                setSelectedLogId(existingLog.id);
+                showToast(`Opened Week ${currentWeekNum} Log`, "success");
+                return;
+            }
+
+            // Create New Log for Current Week
+            if (!confirm(`Start a log entry for CURRENT Week ${currentWeekNum}?`)) return;
             setCreatingLog(true);
 
             try {
                 const user = (await supabase.auth.getUser()).data.user;
                 if (!user) throw new Error("Authentication required");
 
-                const nextWeek = logs.length > 0
-                    ? Math.max(...logs.map(l => l.week_number || 0)) + 1
-                    : 1;
+                // Calculate Monday of this week for the log container date
+                // Since we calculated currentWeekNum from startMonday, we can project forward
+                const weekStart = new Date(startMonday);
+                weekStart.setDate(startMonday.getDate() + (currentWeekNum - 1) * 7);
 
                 const { data, error } = await supabase.from('practicum_logs').insert({
                     student_id: user.id,
                     practicum_id: id,
-                    week_number: nextWeek,
-                    log_date: new Date().toISOString(), // Generic date for sorting
+                    week_number: currentWeekNum,
+                    log_date: weekStart.toISOString(),
                     submission_status: 'draft',
                     supervisor_status: 'pending',
                     instructor_status: 'unread',
@@ -150,7 +224,7 @@ export default function StudentPracticumDashboard({ params }: { params: Promise<
                 await fetchDashboardData();
                 setTab('logs');
                 if (data) setSelectedLogId(data.id);
-                showToast(`Started Week ${nextWeek}`, "success");
+                showToast(`Started Week ${currentWeekNum}`, "success");
 
             } catch (e: any) {
                 console.error(e);
@@ -333,7 +407,6 @@ export default function StudentPracticumDashboard({ params }: { params: Promise<
                                                     };
 
                                                     const getPreWeekEvents = () => {
-                                                        if (!weeks || weeks.length === 0) return [];
                                                         const firstStart = new Date(weeks[0].start_date);
                                                         return events.filter(e => {
                                                             const d = new Date(e.date);
@@ -633,17 +706,56 @@ export default function StudentPracticumDashboard({ params }: { params: Promise<
                                                 {/* Composite View: Builder vs Read-Only */}
                                                 {isComposite ? (
                                                     <div className="space-y-6">
-                                                        {/* Reflection Card */}
                                                         <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100">
-                                                            <div className="flex justify-between items-start">
-                                                                <h4 className="font-bold text-slate-800 mb-2 flex items-center gap-2">
+                                                            <div className="flex justify-between items-start mb-2">
+                                                                <h4 className="font-bold text-slate-800 flex items-center gap-2">
                                                                     <FileText className="w-4 h-4 text-emerald-600" /> Weekly Reflection
                                                                 </h4>
-                                                                {isDraft && <button className="text-xs font-bold text-emerald-600 hover:underline">Edit</button>}
+                                                                {isDraft && (editingReflectionLogId !== log.id) && (
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            setEditingReflectionLogId(log.id);
+                                                                            setReflectionText(log.weekly_reflection || '');
+                                                                        }}
+                                                                        className="text-xs font-bold text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 px-2 py-1 rounded transition-colors"
+                                                                    >
+                                                                        Edit
+                                                                    </button>
+                                                                )}
                                                             </div>
-                                                            <p className="text-slate-700 text-sm leading-relaxed whitespace-pre-wrap">
-                                                                {log.weekly_reflection || "No reflection provided."}
-                                                            </p>
+
+                                                            {editingReflectionLogId === log.id ? (
+                                                                <div className="space-y-3 animate-in fade-in zoom-in-95 duration-200">
+                                                                    <textarea
+                                                                        value={reflectionText}
+                                                                        onChange={e => setReflectionText(e.target.value)}
+                                                                        className="w-full min-h-[100px] p-3 rounded-xl border border-slate-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none text-sm text-slate-800 bg-white"
+                                                                        placeholder="Write your reflection for this week..."
+                                                                        autoFocus
+                                                                    />
+                                                                    <div className="flex justify-end gap-2">
+                                                                        <button
+                                                                            onClick={() => setEditingReflectionLogId(null)}
+                                                                            className="px-3 py-1.5 text-xs font-bold text-slate-500 hover:bg-slate-200 rounded-lg transition-colors"
+                                                                            disabled={savingReflection}
+                                                                        >
+                                                                            Cancel
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={handleSaveReflection}
+                                                                            disabled={savingReflection}
+                                                                            className="px-3 py-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                                                                        >
+                                                                            {savingReflection ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+                                                                            Save Reflection
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            ) : (
+                                                                <p className="text-slate-700 text-sm leading-relaxed whitespace-pre-wrap">
+                                                                    {log.weekly_reflection || <span className="text-slate-400 italic">No reflection provided yet. Click edit to add.</span>}
+                                                                </p>
+                                                            )}
                                                         </div>
 
                                                         {/* Interactive Builder */}
@@ -658,7 +770,7 @@ export default function StudentPracticumDashboard({ params }: { params: Promise<
                                                                             <Edit2 className="w-3.5 h-3.5" /> Edit
                                                                         </button>
                                                                         <button
-                                                                            onClick={() => handleEditDay(new Date().toISOString().split('T')[0], {}, log.week_number || undefined)}
+                                                                            onClick={() => handleEditDay('', {}, log.week_number || undefined)}
                                                                             className="text-xs font-bold text-emerald-600 flex items-center gap-1 hover:bg-emerald-50 px-3 py-1.5 rounded-lg transition-colors border border-emerald-200 bg-white"
                                                                         >
                                                                             <Plus className="w-3.5 h-3.5" /> Add Day
@@ -732,7 +844,7 @@ export default function StudentPracticumDashboard({ params }: { params: Promise<
                                                             {isDraft && (
                                                                 <div className="bg-slate-50 p-4 border-t border-slate-200 flex justify-center">
                                                                     <button
-                                                                        onClick={() => handleEditDay(new Date().toISOString().split('T')[0], {}, log.week_number || undefined)}
+                                                                        onClick={() => handleEditDay('', {}, log.week_number || undefined)}
                                                                         className="w-10 h-10 rounded-full bg-emerald-600 text-white flex items-center justify-center shadow-lg hover:bg-emerald-700 hover:scale-110 transition-all"
                                                                     >
                                                                         <Plus className="w-6 h-6" />
@@ -804,6 +916,27 @@ export default function StudentPracticumDashboard({ params }: { params: Promise<
                     initialDate={editingLogDate}
                     initialData={editingLogData}
                     onSuccess={fetchDashboardData}
+                    // Strict Logic Props
+                    weekStart={(() => {
+                        if (!targetWeekNumber || !practicum) return undefined;
+                        const getMonday = (d: Date) => {
+                            const d2 = new Date(d);
+                            const day = d2.getDay();
+                            const diff = d2.getDate() - day + (day === 0 ? -6 : 1);
+                            return new Date(d2.setDate(diff));
+                        };
+                        const startMonday = getMonday(new Date(practicum.start_date));
+                        startMonday.setHours(0, 0, 0, 0);
+                        const weekStart = new Date(startMonday);
+                        weekStart.setDate(startMonday.getDate() + (targetWeekNumber - 1) * 7);
+                        return weekStart.toISOString().split('T')[0];
+                    })()}
+                    scheduleDays={(enrollment?.schedule as any)?.days || []}
+                    existingDates={(() => {
+                        if (!targetWeekNumber) return [];
+                        const log = logs.find(l => l.week_number === targetWeekNumber);
+                        return (log?.entries as any)?.days?.map((d: any) => d.date) || [];
+                    })()}
                 />
             </div>
         </div >

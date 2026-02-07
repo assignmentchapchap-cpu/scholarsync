@@ -12,26 +12,42 @@ export const generateTimeline = (
     const weeks: TimelineWeek[] = [];
     const events: TimelineEvent[] = [];
 
-    // 1. Generate Weeks
-    let current = new Date(start);
+    // 1. Generate Weeks (Monday Aligned)
+    const getMonday = (d: Date) => {
+        const d2 = new Date(d);
+        const day = d2.getDay();
+        const diff = d2.getDate() - day + (day === 0 ? -6 : 1); // adjust when day is sunday
+        return new Date(d2.setDate(diff));
+    };
+
+    let currentWeekStart = new Date(start);
+    // Align to Monday if start is not Monday
+    if (currentWeekStart.getDay() !== 1) {
+        currentWeekStart = getMonday(currentWeekStart);
+    }
+    // Ensure we strip time component to avoid drift
+    currentWeekStart.setHours(0, 0, 0, 0);
+
     let weekCount = 1;
 
-    while (current < end) {
-        const weekStart = new Date(current);
-        const weekEnd = new Date(current);
-        weekEnd.setDate(weekEnd.getDate() + 6); // 7 day weeks
+    // Use a slightly extended end date to ensure we cover the final partial week if needed
+    const endBuffer = new Date(end);
+    endBuffer.setDate(endBuffer.getDate() + 3); // Buffer to catch mid-week ends
 
-        // Clamp weekEnd to not exceed practicum end date logic? 
-        // Usually weeks are fixed 7-day cycles for reporting
+    while (currentWeekStart < endBuffer) {
+        const weekEnd = new Date(currentWeekStart);
+        weekEnd.setDate(currentWeekStart.getDate() + 6); // Sunday
+        weekEnd.setHours(23, 59, 59, 999);
 
         weeks.push({
             week_number: weekCount,
-            start_date: weekStart.toISOString(),
+            start_date: currentWeekStart.toISOString(),
             end_date: weekEnd.toISOString(),
             label: `Week ${weekCount}`
         });
 
-        current.setDate(current.getDate() + 7);
+        // Advance to next Monday
+        currentWeekStart.setDate(currentWeekStart.getDate() + 7);
         weekCount++;
     }
 
