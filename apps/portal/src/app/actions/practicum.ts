@@ -5,6 +5,8 @@ import { createClient } from '@supabase/supabase-js';
 import { cookies, headers } from "next/headers";
 import { Resend } from 'resend';
 import { Database } from "@schologic/database";
+import crypto from 'crypto';
+import { SupervisorReport } from '@/types/practicum';
 
 const resend = new Resend(process.env.RESEND_API_KEY!);
 
@@ -209,6 +211,165 @@ export async function updatePracticumRubric(
         return { success: true };
     } catch (error: any) {
         console.error('Error updating rubric:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+// --- SUPERVISOR FINAL REPORT ACTIONS ---
+
+/**
+ * Generates a secure HMAC signature for the report link.
+ * Link validity depends on enrollment ID, expiration timestamp, and server secret.
+ */
+function signReportLink(enrollmentId: string, expiresAt: number) {
+    const secret = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+    const data = `${enrollmentId}:${expiresAt}`;
+    return crypto.createHmac('sha256', secret).update(data).digest('hex');
+}
+
+/**
+ * Verifies the signature of a report link.
+ */
+function verifyReportLink(enrollmentId: string, expiresAt: number, signature: string) {
+    const expected = signReportLink(enrollmentId, expiresAt);
+    return signature === expected;
+}
+
+/**
+ * Sends "Final Report Request" emails to supervisors for selected students.
+ * Generates a unique, signed link for each supervisor.
+ */
+export async function requestSupervisorReports(practicumId: string, studentIds: string[]) {
+    try {
+        const headerStore = await headers();
+        const supabaseAdmin = getAdminClient();
+
+        // 1. Fetch Enrollments with Supervisor Data
+        const { data: enrollments, error: fetchError } = await supabaseAdmin
+            .from('practicum_enrollments')
+            .select(`
+                id, student_id, supervisor_data,
+                practicums:practicum_id ( title )
+            `)
+            .eq('practicum_id', practicumId)
+            .in('student_id', studentIds);
+
+        if (fetchError) throw fetchError;
+
+        // 2. Fetch Profiles Manually (Avoids FK join issues if student_id -> auth.users vs profiles)
+        const userIds = enrollments.map(e => e.student_id);
+        const { data: profiles } = await supabaseAdmin
+            .from('profiles')
+            .select('id, full_name, first_name')
+            .in('id', userIds);
+
+        const profileMap = new Map(profiles?.map(p => [p.id, p]));
+
+        let sentCount = 0;
+        let errorCount = 0;
+
+        // Determine Origin
+        let origin = headerStore.get('origin') || process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+        if (process.env.NODE_ENV === 'development' && origin.includes('schologic.com')) {
+            origin = 'http://localhost:3000';
+        }
+
+        // 3. Iterate and Send
+        for (const enrollment of enrollments || []) {
+            const supervisor = enrollment.supervisor_data as any;
+            const profile = profileMap.get(enrollment.student_id);
+
+            if (!supervisor?.email) {
+                console.warn(`No supervisor email for student ${profile?.full_name || 'unknown'}`);
+                errorCount++;
+                continue;
+            }
+
+            // Generate Link (Valid for 14 days)
+            const expiresAt = Date.now() + (14 * 24 * 60 * 60 * 1000);
+            const signature = signReportLink(enrollment.id, expiresAt);
+            const reportLink = `${origin}/verify/report/${enrollment.id}?sig=${signature}&expires=${expiresAt}`;
+
+            const studentName = profile?.full_name || 'Student';
+
+            const practicumData = Array.isArray(enrollment.practicums) ? enrollment.practicums[0] : enrollment.practicums;
+            const practicumTitle = (practicumData as any)?.title || 'Practicum';
+
+            const { error: sendError } = await resend.emails.send({
+                from: 'Schologic Practicum <onboarding@schologic.com>',
+                to: supervisor.email,
+                subject: `Final Report Request: ${studentName}`,
+                html: `
+<div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+  <p style="font-size: 11px; color: #64748b; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">SCHOLOGIC PRACTICUM // FINAL REPORT</p>
+  <p>Dear ${supervisor.name || 'Supervisor'},</p>
+  <p>You are supervising <strong>${studentName}</strong> for <strong>${practicumTitle}</strong>.</p>
+  <p>As the practicum period concludes, we kindly request you to complete the <strong>Final Evaluation Report</strong>.</p>
+  <p>Your assessment accounts for <strong>50%</strong> of the student's final grade.</p>
+  
+  <div style="margin: 30px 0;">
+    <a href="${reportLink}" style="background: #0f172a; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Complete Final Report</a>
+  </div>
+  
+  <p style="font-size: 12px; color: #64748b;">
+    This link is valid for 14 days.<br>
+    Link: <a href="${reportLink}">${reportLink}</a>
+  </p>
+</div>
+                `
+            });
+
+            if (sendError) {
+                console.error(`Failed to email ${supervisor.email}`, sendError);
+                errorCount++;
+            } else {
+                sentCount++;
+            }
+        }
+
+        return { success: true, sent: sentCount, errors: errorCount };
+
+    } catch (error: any) {
+        console.error("Request Report Error:", error);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Validates and saves a submitted Supervisor Final Report.
+ * Publicly accessible but protected by HMAC signature.
+ */
+export async function submitSupervisorReport(
+    enrollmentId: string,
+    report: SupervisorReport,
+    signature: string,
+    expiresAt: number
+) {
+    try {
+        // 1. Verify Signature
+        if (Date.now() > expiresAt) throw new Error("This link has expired.");
+        if (!verifyReportLink(enrollmentId, expiresAt, signature)) throw new Error("Invalid signature link.");
+
+        // 2. Calculate Score (0-50 based on 50% weight)
+        // Trust the report.total_score passed from frontend, but we should validate max.
+        // For now, simplicity.
+
+        // 3. Save to DB
+        const supabaseAdmin = getAdminClient();
+        const { error } = await supabaseAdmin
+            .from('practicum_enrollments')
+            .update({
+                supervisor_report: report as any,
+                // We DO NOT update final_grade yet.
+            })
+            .eq('id', enrollmentId);
+
+        if (error) throw error;
+
+        return { success: true };
+
+    } catch (error: any) {
+        console.error("Submit Report Error:", error);
         return { success: false, error: error.message };
     }
 }

@@ -38,6 +38,42 @@ export type LogTemplateType = 'teaching_practice' | 'industrial_attachment' | 'c
 
 export type SupervisorStatus = 'pending' | 'verified' | 'rejected';
 
+export interface SupervisorReport {
+    submitted_at: string;
+    sections: {
+        id: string;
+        title: string;
+        items: {
+            id: string;
+            label: string;
+            type: 'rating' | 'text' | 'boolean';
+            value: any; // number | string | boolean
+            max_score?: number;
+        }[];
+    }[];
+    total_score?: number;
+    max_total_score?: number;
+    feedback?: string;
+    recommendation?: string;
+}
+
+export interface SupervisorReportTemplate {
+    id: string; // 'teaching_practice' | 'industrial_attachment'
+    title: string;
+    sections: {
+        id: string;
+        title: string;
+        description?: string;
+        items: {
+            id: string;
+            label: string;
+            type: 'rating' | 'text' | 'boolean';
+            options?: string[]; // For rating labels (e.g. Poor, Good, Excellent)
+            max_score?: number;
+        }[];
+    }[];
+}
+
 // Represents the full DB row + JSONB entries
 export interface PracticumLog {
     id: string;
@@ -131,3 +167,35 @@ export interface PracticumTimeline {
     // Legacy support if needed, but primary is above
     milestones?: TimelineEvent[];
 }
+
+export interface PracticumEnrollment {
+    id: string;
+    student_id: string;
+    practicum_id: string;
+    status: 'pending' | 'approved' | 'rejected' | 'completed';
+    joined_at: string;
+    approved_at?: string;
+
+    // Data Buckets
+    supervisor_data: SupervisorData;
+    workplace_data: WorkplaceData;
+    academic_data: AcademicData;
+    schedule: PracticumSchedule;
+
+    // Reports
+    supervisor_report?: SupervisorReport;
+    student_report_url?: string;
+    student_report_grades?: any;
+
+    // Grading
+    logs_grade?: number;
+    report_grade?: number;
+    supervisor_grade?: number;
+    final_grade?: number;
+
+    // Metadata
+    student_email?: string;
+    student_phone?: string;
+    student_registration_number?: string;
+}
+

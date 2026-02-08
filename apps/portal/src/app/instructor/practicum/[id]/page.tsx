@@ -25,8 +25,11 @@ import TimelineEditor from '@/components/instructor/TimelineEditor';
 import RubricsManager from '@/components/instructor/rubrics/RubricsManager';
 import EnrollmentsTab from '@/components/instructor/enrollments/EnrollmentsTab';
 import SubmissionsManager from '@/components/instructor/submissions/SubmissionsManager';
+import PracticumGradesTab from '@/components/instructor/grades/PracticumGradesTab';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { useNavigationGuard } from '@/context/NavigationGuardContext';
+
+import RequestReportDialog from '@/components/instructor/RequestReportDialog';
 
 export default function PracticumDetailsPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
@@ -48,6 +51,7 @@ function PracticumDetailsContent({ id }: { id: string }) {
     // Internal Dialog State
     const [showConfirm, setShowConfirm] = useState(false);
     const [pendingTab, setPendingTab] = useState<(typeof activeTab) | null>(null);
+    const [isRequestDialogOpen, setIsRequestDialogOpen] = useState(false);
 
     // Consolidated dirty check
     const isDirty = (tab: string) => {
@@ -235,6 +239,14 @@ function PracticumDetailsContent({ id }: { id: string }) {
                                 {/* Desktop Actions */}
                                 <div className="hidden md:flex items-center gap-2 shrink-0">
                                     <button
+                                        onClick={() => setIsRequestDialogOpen(true)}
+                                        className="px-3 py-1.5 rounded-xl font-bold text-xs md:text-sm transition-all flex items-center gap-2 border shadow-sm bg-purple-50 text-purple-600 border-purple-100 hover:bg-purple-100"
+                                    >
+                                        <Award className="w-3 h-3 md:w-4 md:h-4" />
+                                        <span className="hidden md:inline">Request Reports</span>
+                                    </button>
+
+                                    <button
                                         onClick={() => setIsHeaderExpanded(!isHeaderExpanded)}
                                         className="p-2 rounded-xl bg-slate-50 text-slate-600 hover:bg-slate-100 transition-colors md:hidden"
                                     >
@@ -399,18 +411,19 @@ function PracticumDetailsContent({ id }: { id: string }) {
                     />
                 )}
 
-                {/* Grades Tab Stub */}
+                {/* Grades Tab */}
                 {activeTab === 'grades' && (
-                    <div className="bg-white p-12 rounded-3xl border border-slate-200 border-dashed text-center animate-fade-in">
-                        <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <Award className="w-8 h-8 text-slate-300" />
-                        </div>
-                        <h3 className="text-lg font-bold text-slate-800 mb-2">Final Grades</h3>
-                        <p className="text-slate-500 max-w-md mx-auto">Calculate and export final grades based on weighted assessments.</p>
-                        <p className="mt-4 text-xs font-mono bg-slate-100 inline-block px-2 py-1 rounded text-slate-500">Coming Soon</p>
-                    </div>
+                    <PracticumGradesTab practicum={practicum} />
                 )}
             </div>
+
+            <RequestReportDialog
+                isOpen={isRequestDialogOpen}
+                onClose={() => setIsRequestDialogOpen(false)}
+                enrollments={enrollments}
+                practicumId={id}
+            />
+
             <ConfirmDialog
                 isOpen={showConfirm}
                 title="Unsaved Changes"

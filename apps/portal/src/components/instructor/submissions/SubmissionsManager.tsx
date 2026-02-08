@@ -6,6 +6,7 @@ import { Loader2, AlertCircle } from 'lucide-react';
 import StudentListSidebar from './StudentListSidebar';
 import SubmissionsListColumn from './SubmissionsListColumn';
 import LogReadingPane from './LogReadingPane';
+import { updatePracticumGrades } from '@/app/actions/grading';
 
 type Practicum = Database['public']['Tables']['practicums']['Row'];
 type Enrollment = Database['public']['Tables']['practicum_enrollments']['Row'] & {
@@ -30,7 +31,7 @@ export default function SubmissionsManager({ practicumId, practicum }: Submissio
     // UI State
     const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
     const [selectedLogId, setSelectedLogId] = useState<string | null>(null);
-    const [filter, setFilter] = useState<'all' | 'unread' | 'logs' | 'reports'>('all');
+    const [filter, setFilter] = useState<'all' | 'logs' | 'student_reports' | 'supervisor_reports'>('all');
 
     // Processing State
     const [processingId, setProcessingId] = useState<string | null>(null);
@@ -94,18 +95,36 @@ export default function SubmissionsManager({ practicumId, practicum }: Submissio
                 .filter(e => e.student_report_url)
                 .map(e => ({
                     id: `report-${e.student_id}`,
-                    type: 'report',
+                    type: 'student_report', // RENAMED
                     student_id: e.student_id,
-                    log_date: e.joined_at, // Use joined_at as fallback since updated_at is missing
+                    log_date: e.joined_at,
                     submission_status: 'submitted',
-                    supervisor_status: e.final_grade ? 'verified' : 'pending', // Use final_grade as proxy for verification
-                    instructor_status: e.student_report_grades ? 'read' : 'unread', // Simple logic for now
+                    supervisor_status: e.final_grade ? 'verified' : 'pending',
+                    instructor_status: e.student_report_grades ? 'read' : 'unread',
                     student_report_url: e.student_report_url,
-                    entries: { subject_taught: 'Final Report' } // Mock for title display
+                    entries: { subject_taught: 'Final Report' }
+                }));
+
+            // 4b. Generate Supervisor Report Items
+            const supervisorReportItems = enrollDataRaw
+                // We show item if supervisor_report exists OR if we want to show pending ones? 
+                // Let's show all approved enrollments as 'pending' supervisor reports or only submitted ones?
+                // Plan says: "List View: Shows status of reports (Pending / Submitted)"
+                // So we should list them all for approved students.
+                .map(e => ({
+                    id: `sup-report-${e.student_id}`,
+                    type: 'supervisor_report',
+                    student_id: e.student_id,
+                    log_date: e.joined_at, // Or updated_at
+                    submission_status: 'submitted', // Check actual report existence below
+                    instructor_status: e.supervisor_report ? 'unread' : 'read', // Mark unread if submitted and not graded? Simplicity: 'unread' if submitted.
+                    supervisor_report: e.supervisor_report,
+                    entries: { subject_taught: 'Supervisor Evaluation' },
+                    // Status logic handled in Column based on supervisor_report presence
                 }));
 
             // 5. Combine and Sort
-            const allSubmissions = [...logData, ...reportItems].sort((a, b) =>
+            const allSubmissions = [...logData, ...reportItems, ...supervisorReportItems].sort((a, b) =>
                 new Date(b.log_date).getTime() - new Date(a.log_date).getTime()
             );
 
@@ -209,6 +228,24 @@ export default function SubmissionsManager({ practicumId, practicum }: Submissio
         }
     };
 
+    // Grading Logic
+    const handleUpdateGrade = async (enrollmentId: string, field: 'logs_grade' | 'report_grade' | 'supervisor_grade', value: number) => {
+        try {
+            // Optimistic Update
+            setStudents(prev => prev.map(s =>
+                s.id === enrollmentId ? { ...s, [field]: value } : s
+            ));
+
+            const result = await updatePracticumGrades(enrollmentId, { [field]: value });
+            if (!result.success) throw new Error(result.error);
+
+            showToast("Grade updated", "success");
+        } catch (e: any) {
+            console.error("Failed to update grade", e);
+            showToast("Failed to update grade", "error");
+        }
+    };
+
     if (loading) {
         return <div className="p-12 flex items-center justify-center text-slate-400 gap-2"><Loader2 className="w-5 h-5 animate-spin" /> Loading Submissions...</div>;
     }
@@ -221,6 +258,9 @@ export default function SubmissionsManager({ practicumId, practicum }: Submissio
     const selectedLog = selectedLogId
         ? logs.find(l => l.id === selectedLogId)
         : null;
+
+    const selectedStudent = selectedStudentId ? students.find(s => s.student_id === selectedStudentId) : null;
+
 
     return (
         <div className="h-[calc(100vh-200px)] min-h-[600px] flex bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm animate-fade-in">
@@ -241,6 +281,12 @@ export default function SubmissionsManager({ practicumId, practicum }: Submissio
                         onSelect={handleLogSelect}
                         filter={filter}
                         setFilter={setFilter}
+                        currentLogsGrade={selectedStudent?.logs_grade ?? undefined}
+                        onUpdateLogsGrade={(g) => selectedStudent && handleUpdateGrade(selectedStudent.id, 'logs_grade', g)}
+                        currentReportGrade={selectedStudent?.report_grade ?? undefined}
+                        onUpdateReportGrade={(g) => selectedStudent && handleUpdateGrade(selectedStudent.id, 'report_grade', g)}
+                        currentSupervisorGrade={selectedStudent?.supervisor_grade ?? undefined}
+                        onUpdateSupervisorGrade={(g) => selectedStudent && handleUpdateGrade(selectedStudent.id, 'supervisor_grade', g)}
                     />
                 ) : (
                     <div className="h-full flex items-center justify-center bg-slate-50 text-slate-400 text-xs">Select a student</div>
@@ -256,6 +302,9 @@ export default function SubmissionsManager({ practicumId, practicum }: Submissio
                         onVerify={(id) => handleVerification(id, 'verified')}
                         onReject={(id) => handleVerification(id, 'rejected')}
                         verificationProcessing={processingId === selectedLog.id}
+                        // Grading Props
+                        currentReportGrade={selectedStudent?.report_grade ?? undefined}
+                        onUpdateReportGrade={(g) => selectedStudent && handleUpdateGrade(selectedStudent.id, 'report_grade', g)}
                     />
                 ) : (
                     <div className="h-full flex flex-col items-center justify-center text-slate-300 p-8 text-center">

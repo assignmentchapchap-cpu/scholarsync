@@ -15,13 +15,17 @@ interface LogReadingPaneProps {
     onVerify: (logId: string) => void;
     onReject: (logId: string) => void;
     verificationProcessing?: boolean;
+    // New: Grading Props
+    currentReportGrade?: number;
+    onUpdateReportGrade?: (grade: number) => void;
 }
 
-export default function LogReadingPane({ log, practicum, onVerify, onReject, verificationProcessing = false }: LogReadingPaneProps) {
+export default function LogReadingPane({ log, practicum, onVerify, onReject, verificationProcessing = false, currentReportGrade, onUpdateReportGrade }: LogReadingPaneProps) {
     const entries = log.entries as any;
     const isComposite = practicum.log_interval !== 'daily';
     const isDraft = (log as any).submission_status === 'draft';
-    const isReport = (log as any).type === 'report';
+    const isReport = (log as any).type === 'student_report'; // Using new type key
+    const isSupervisorReport = (log as any).type === 'supervisor_report';
 
     // Status badges logic
     // Status badges logic
@@ -42,6 +46,94 @@ export default function LogReadingPane({ log, practicum, onVerify, onReject, ver
             default: return status;
         }
     };
+
+    if (isSupervisorReport) {
+        const report = (log as any).supervisor_report; // Type: SupervisorReport
+
+        if (!report) {
+            return (
+                <div className="h-full flex items-center justify-center text-slate-400">
+                    <div className="text-center">
+                        <AlertCircle className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                        <p>Report pending submission.</p>
+                    </div>
+                </div>
+            )
+        }
+
+        return (
+            <div className="h-full flex flex-col bg-white">
+                <div className="p-6 border-b border-slate-100 bg-slate-50/30 flex justify-between items-start">
+                    <div>
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="p-2 bg-purple-100 text-purple-600 rounded-lg">
+                                <User className="w-6 h-6" />
+                            </div>
+                            <h2 className="text-2xl font-black text-slate-900">Supervisor Evaluation</h2>
+                        </div>
+                        <p className="text-slate-500 font-medium">
+                            Submitted on {report.submitted_at ? format(new Date(report.submitted_at), 'MMM d, yyyy') : '-'}
+                        </p>
+                    </div>
+                    <div className="flex flex-col items-end">
+                        <span className="text-xs font-bold uppercase text-slate-400 tracking-wider">Total Score</span>
+                        <div className="flex items-baseline gap-1">
+                            <span className="text-3xl font-black text-emerald-600">{report.total_score}</span>
+                            <span className="text-lg text-emerald-400 font-medium">/ {report.max_total_score}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="flex-grow overflow-y-auto p-6 space-y-8">
+                    {/* Sections */}
+                    {report.sections.map((section: any) => (
+                        <div key={section.id} className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+                            <h3 className="font-bold text-slate-900 border-b border-slate-100 pb-3 mb-4 flex justify-between items-center">
+                                <span>{section.title}</span>
+                                <span className="text-xs font-normal text-slate-400 bg-slate-50 px-2 py-1 rounded-md">Score Breakdown</span>
+                            </h3>
+                            <div className="flex flex-col gap-4">
+                                {section.items.map((item: any) => (
+                                    <div key={item.id} className="flex justify-between items-center">
+                                        <span className="text-sm font-medium text-slate-600 w-1/2">{item.label}</span>
+                                        <div className="flex items-center gap-3">
+                                            {/* Visual Rating Bar */}
+                                            <div className="flex gap-1">
+                                                {[1, 2, 3, 4, 5].map(star => (
+                                                    <div
+                                                        key={star}
+                                                        className={cn(
+                                                            "w-4 h-1 rounded-full transition-colors",
+                                                            star <= item.value ? "bg-emerald-500" : "bg-slate-200"
+                                                        )}
+                                                    />
+                                                ))}
+                                            </div>
+                                            <span className="font-bold text-slate-900 w-6 text-right text-sm">{item.value}/{item.max_score}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    ))}
+
+                    {/* Feedback */}
+                    <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 space-y-4">
+                        <div>
+                            <h4 className="font-bold text-slate-800 mb-2 text-sm uppercase tracking-wider">General Feedback</h4>
+                            <p className="text-slate-700 italic leading-relaxed whitespace-pre-wrap">"{report.feedback || 'No feedback provided.'}"</p>
+                        </div>
+                        {report.recommendation && (
+                            <div className="pt-4 border-t border-slate-200">
+                                <h4 className="font-bold text-slate-800 mb-2 text-sm uppercase tracking-wider">Recommendation</h4>
+                                <p className="text-slate-700 font-medium whitespace-pre-wrap">"{report.recommendation}"</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     if (isReport) {
         return (
@@ -87,9 +179,33 @@ export default function LogReadingPane({ log, practicum, onVerify, onReject, ver
                 </div>
 
                 {/* Placeholder for Grading Pane (Deferred) */}
+                {/* Grading Section */}
                 <div className="p-6 border-t border-slate-100 bg-slate-50">
-                    <div className="p-4 border border-dashed border-slate-300 rounded-xl text-center text-slate-400 text-sm">
-                        Grading functionality coming soon.
+                    <div className="flex items-center justify-between bg-white p-4 rounded-xl border border-emerald-100 shadow-sm">
+                        <div>
+                            <h4 className="font-bold text-slate-800 text-sm uppercase tracking-wider mb-1">Report Grade</h4>
+                            <p className="text-xs text-slate-500">Assign a final score for this report.</p>
+                        </div>
+
+                        {onUpdateReportGrade ? (
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    className="w-20 p-2 text-center font-bold text-emerald-600 text-lg border border-slate-200 rounded-lg focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                                    placeholder="-"
+                                    value={currentReportGrade ?? ''}
+                                    onChange={(e) => {
+                                        const val = parseFloat(e.target.value);
+                                        if (!isNaN(val)) onUpdateReportGrade(val);
+                                    }}
+                                />
+                                <span className="font-bold text-slate-400">/ 100</span>
+                            </div>
+                        ) : (
+                            <span className="text-xs text-slate-400 italic">Grading unavailable</span>
+                        )}
                     </div>
                 </div>
             </div>
