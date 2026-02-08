@@ -26,9 +26,6 @@ export async function updatePracticumGrades(enrollmentId: string, grades: {
         if (grades.supervisor_grade !== undefined) updatePayload.supervisor_grade = grades.supervisor_grade;
         if (grades.final_grade !== undefined) updatePayload.final_grade = grades.final_grade;
 
-        console.log('📝 Updating grades for enrollment:', enrollmentId);
-        console.log('📊 Update payload:', updatePayload);
-
         const { data, error } = await supabase
             .from('practicum_enrollments')
             .update(updatePayload)
@@ -39,8 +36,6 @@ export async function updatePracticumGrades(enrollmentId: string, grades: {
             console.error('❌ Supabase error:', error);
             throw error;
         }
-
-        console.log('✅ Update successful, returned data:', data);
 
         revalidatePath(`/instructor/practicum`); // Revalidate generally
         return { success: true };

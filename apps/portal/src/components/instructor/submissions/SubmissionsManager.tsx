@@ -231,7 +231,7 @@ export default function SubmissionsManager({ practicumId, practicum }: Submissio
     // Grading Logic
     const handleUpdateGrade = async (enrollmentId: string, field: 'logs_grade' | 'report_grade' | 'supervisor_grade', value: number) => {
         try {
-            // Optimistic Update
+            // Optimistic Update (immediate UI feedback)
             setStudents(prev => prev.map(s =>
                 s.id === enrollmentId ? { ...s, [field]: value } : s
             ));
@@ -240,9 +240,15 @@ export default function SubmissionsManager({ practicumId, practicum }: Submissio
             if (!result.success) throw new Error(result.error);
 
             showToast("Grade updated", "success");
+
+            // Refetch data to ensure UI matches database
+            await fetchAllData();
         } catch (e: any) {
             console.error("Failed to update grade", e);
             showToast("Failed to update grade", "error");
+
+            // Refetch to revert optimistic update if failed
+            await fetchAllData();
         }
     };
 

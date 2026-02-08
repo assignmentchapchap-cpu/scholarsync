@@ -26,18 +26,45 @@ export default function PracticumGradesTab({ practicum }: PracticumGradesTabProp
     const fetchData = async () => {
         setLoading(true);
         try {
-            const { data, error } = await supabase
+            // 1. Fetch enrollments
+            const { data: enrollData, error: enrollError } = await supabase
                 .from('practicum_enrollments')
-                .select('*, profiles(*)')
+                .select('*')
                 .eq('practicum_id', practicum.id)
                 .eq('status', 'approved')
                 .order('student_registration_number', { ascending: true });
 
-            if (error) throw error;
-            console.log('Fetched enrollments with grades:', data);
-            setEnrollments(data as unknown as Enrollment[]);
+            if (enrollError) {
+                console.error('❌ Enrollment fetch error:', enrollError);
+                throw enrollError;
+            }
+
+            if (!enrollData || enrollData.length === 0) {
+                setEnrollments([]);
+                return;
+            }
+
+            // 2. Fetch profiles for all students
+            const studentIds = enrollData.map((e: any) => e.student_id);
+            const { data: profilesData, error: profilesError } = await supabase
+                .from('profiles')
+                .select('*')
+                .in('id', studentIds);
+
+            if (profilesError) {
+                console.error('⚠️ Profiles fetch error (continuing without):', profilesError);
+            }
+
+            // 3. Merge profiles into enrollments
+            const profilesMap = new Map(profilesData?.map(p => [p.id, p]) || []);
+            const mergedData = enrollData.map((enrollment: any) => ({
+                ...enrollment,
+                profiles: profilesMap.get(enrollment.student_id) || null
+            }));
+
+            setEnrollments(mergedData as unknown as Enrollment[]);
         } catch (e: any) {
-            console.error('Error fetching grades:', e);
+            console.error('🔥 Error fetching grades:', e);
             showToast("Failed to load grades", "error");
         } finally {
             setLoading(false);

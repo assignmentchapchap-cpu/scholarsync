@@ -79,7 +79,7 @@ export default function SubmissionsListColumn({ items, selectedId, onSelect, fil
 
 
             {/* Grading Header - Logs (Only show when viewing logs) */}
-            {(filter === 'logs' || filter === 'all') && onUpdateLogsGrade && (
+            {filter === 'logs' && onUpdateLogsGrade && (
                 <div className="p-3 bg-emerald-50 border-b border-emerald-100 flex justify-between items-center animate-fade-in">
                     <span className="text-xs font-bold text-emerald-800 uppercase tracking-wide">Logs Grade</span>
                     <div className="flex items-center gap-2">
