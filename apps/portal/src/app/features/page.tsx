@@ -1,10 +1,9 @@
 
-
 import { FeatureHero } from '@/components/features/FeatureHero';
 import { FeatureGrid, FeatureCard } from '@/components/features/FeatureGrid';
 import { FEATURE_LINKS } from '@/components/features/StickySubNav';
 // Using hardcoded data for now to ensure rendering without data fetching dependencies
-import { GraduationCap, Shield, Sparkles, BookOpen, Grid, Archive, Users, Zap, Lock } from 'lucide-react';
+import { GraduationCap, Shield, Sparkles, BookOpen, Grid, Archive, Users, Zap, Lock, FileText } from 'lucide-react';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -55,6 +54,13 @@ export default function FeaturesPage() {
                             icon={<Grid className="w-7 h-7 text-emerald-400" />}
                             href="/features/class-manager"
                             bgColor="bg-emerald-400/10"
+                        />
+                        <FeatureCard
+                            title="Practicum Manager"
+                            description="End-to-end practicum and internship management. Track student placements, supervisor evaluations, and compliance from one centralized platform."
+                            icon={<FileText className="w-7 h-7 text-purple-400" />}
+                            href="/features/practicum-manager"
+                            bgColor="bg-purple-400/10"
                         />
                         <FeatureCard
                             title="AI Detection"
