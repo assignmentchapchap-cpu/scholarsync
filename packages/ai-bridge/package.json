@@ -6,9 +6,7 @@
     "scripts": {
         "build": "tsc"
     },
-    "dependencies": {
-        "openai": "^4.24.1"
-    },
+    "dependencies": {},
     "devDependencies": {
         "@schologic/config": "workspace:*",
         "@types/node": "^25.0.8",
