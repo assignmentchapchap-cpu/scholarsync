@@ -80,7 +80,7 @@ export default function TimelineEditor({ practicumId, initialConfig, onUpdate, s
 
     // Helpers
     const getEventsForWeek = (week: TimelineWeek) => {
-        if (!config.events) return [];
+        if (!config?.events) return [];
         const start = new Date(week.start_date);
         const end = new Date(week.end_date);
         // Ensure we cover the full end day
@@ -98,7 +98,7 @@ export default function TimelineEditor({ practicumId, initialConfig, onUpdate, s
     };
 
     const getVisibleWeeks = () => {
-        if (!config.weeks) return [];
+        if (!config?.weeks) return [];
 
         return config.weeks.filter(week => {
             const events = getEventsForWeek(week);
@@ -107,7 +107,7 @@ export default function TimelineEditor({ practicumId, initialConfig, onUpdate, s
     };
 
     const getPreWeekEvents = () => {
-        if (config.weeks.length === 0) return [];
+        if (!config?.weeks || config.weeks.length === 0) return [];
         const firstStart = new Date(config.weeks[0].start_date);
 
         return config.events.filter(e => {
@@ -118,7 +118,7 @@ export default function TimelineEditor({ practicumId, initialConfig, onUpdate, s
     };
 
     const getPostWeekEvents = () => {
-        if (config.weeks.length === 0) return config.events; // If no weeks, everything is here (or handled loosely)
+        if (!config?.weeks || config.weeks.length === 0) return config?.events || []; // If no weeks, everything is here (or handled loosely)
         const lastEnd = new Date(config.weeks[config.weeks.length - 1].end_date);
 
         return config.events.filter(e => {
@@ -187,7 +187,7 @@ export default function TimelineEditor({ practicumId, initialConfig, onUpdate, s
 
     const handleAddEvent = () => {
         // Default to today or start of first week
-        const defaultDate = config.weeks.length > 0 ? config.weeks[0].start_date : new Date().toISOString();
+        const defaultDate = config?.weeks && config.weeks.length > 0 ? config.weeks[0].start_date : new Date().toISOString();
         const newEvent: TimelineEvent = {
             id: uuidv4(),
             title: 'New Event',
@@ -220,7 +220,7 @@ export default function TimelineEditor({ practicumId, initialConfig, onUpdate, s
     };
 
     // Count invisible logs to show what's hidden
-    const hiddenLogCount = !showLogs && config.events ? config.events.filter(e => e.type === 'log').length : 0;
+    const hiddenLogCount = !showLogs && config?.events ? config.events.filter(e => e.type === 'log').length : 0;
 
     return (
         <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">

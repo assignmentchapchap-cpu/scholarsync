@@ -166,7 +166,10 @@ export default function Sidebar({ role, isCollapsed = false, onToggleCollapse }:
                         "flex items-center p-6 border-b border-slate-800 transition-all duration-300",
                         isCollapsed ? "justify-center px-4" : "justify-end md:justify-between gap-3"
                     )}>
-                        <div className={cn("hidden md:flex items-center gap-3 overflow-hidden")}>
+                        <Link
+                            href={role === 'instructor' ? '/instructor/dashboard' : '/student/dashboard'}
+                            className={cn("hidden md:flex items-center gap-3 overflow-hidden hover:opacity-80 transition-opacity cursor-pointer")}
+                        >
                             <div className="relative w-10 h-10 shrink-0">
                                 <Image src="/logo.png" alt="Schologic LMS" fill className="object-cover rounded-xl" />
                             </div>
@@ -176,7 +179,7 @@ export default function Sidebar({ role, isCollapsed = false, onToggleCollapse }:
                                 </span>
                                 <p className="text-xs text-slate-400 font-medium uppercase tracking-wider">{role}</p>
                             </div>
-                        </div>
+                        </Link>
                         {/* Close Button Mobile */}
                         <button
                             onClick={() => setIsMobileOpen(false)}

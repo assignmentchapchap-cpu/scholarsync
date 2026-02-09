@@ -1,8 +1,9 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
-import { DEMO_CLASS, DEMO_STUDENTS, DEMO_ASSIGNMENTS, DEMO_SUBMISSION_TEXT_1, DEMO_SUBMISSION_TEXT_2, DEMO_AI_REPORTS, DEMO_RESOURCES, DEMO_STUDENT_PASSWORD } from '@/lib/demo-data';
+import { DEMO_CLASS, DEMO_STUDENTS, DEMO_ASSIGNMENTS, DEMO_SUBMISSION_TEXT_1, DEMO_SUBMISSION_TEXT_2, DEMO_AI_REPORTS, DEMO_RESOURCES, DEMO_STUDENT_PASSWORD, DEMO_PRACTICUM, DEMO_LOG_ENTRIES, DEMO_STUDENT_IDS, DEMO_SUPERVISOR_REPORTS } from '@/lib/demo-data';
 import { v4 as uuidv4 } from 'uuid';
+import { generateTimeline } from '@schologic/practicum-core';
 
 // Initialize Supabase Admin Client (Service Role needed for creating users)
 const supabaseAdmin = createClient(
@@ -73,6 +74,16 @@ export async function POST(req: Request) {
             console.error("Profile Upsert Error (non-fatal):", profileError);
         }
 
+        // 2b. Enable practicum management for demo instructor
+        await supabaseAdmin
+            .from('profiles')
+            .update({
+                preferences: {
+                    enable_practicum_management: true
+                }
+            })
+            .eq('id', userId);
+
         // 3. Create Seed Data
         // A. Class
         const classId = uuidv4();
@@ -90,45 +101,24 @@ export async function POST(req: Request) {
 
         if (classError) throw classError;
 
-        // B. Students (Create Auth Users first to satisfy FK)
-        // We reduce to 5 students to avoid rate limits/timeouts
-        const studentSubset = DEMO_STUDENTS.slice(0, 5);
-        const studentAuthPromises = studentSubset.map((s, i) => {
-            const email = `student_${Date.now()}_${i}_${Math.floor(Math.random() * 999)}@schologic.demo`;
-            return supabaseAdmin.auth.admin.createUser({
-                email: email,
-                password: DEMO_STUDENT_PASSWORD,
-                email_confirm: true,
-                user_metadata: {
-                    full_name: `${s.first} ${s.last}`,
-                    role: 'student'
-                }
-            });
-        });
 
-        const studentAuthResults = await Promise.all(studentAuthPromises);
+        // B. Fetch shared demo students (permanent, not created per demo)
+        const { data: students, error: studentFetchError } = await supabaseAdmin
+            .from('profiles')
+            .select('*')
+            .in('id', DEMO_STUDENT_IDS)
+            .eq('role', 'student');
 
-        const students = studentAuthResults
-            .map((res, index) => {
-                if (res.data.user) {
-                    const s = studentSubset[index];
-                    return {
-                        id: res.data.user.id, // Real Auth ID
-                        role: 'student',
-                        full_name: `${s.first} ${s.last}`,
-                        email: res.data.user.email,
-                        registration_number: `A${Math.floor(1000 + Math.random() * 9000)}`
-                    };
-                }
-                console.error("Failed to create student user:", res.error);
-                return null;
-            })
-            .filter((s): s is NonNullable<typeof s> => s !== null);
+        if (studentFetchError) {
+            throw new Error(`Failed to fetch demo students: ${studentFetchError.message}`);
+        }
 
-        if (students.length === 0) throw new Error("Failed to create any student accounts");
+        if (!students || students.length < 4) {
+            throw new Error(`Insufficient demo students found. Expected 5, got ${students?.length || 0}. Ensure permanent demo students exist in Supabase.`);
+        }
 
-        const { error: studError } = await supabaseAdmin.from('profiles').upsert(students);
-        if (studError) throw studError;
+        console.log(`✅ Using ${students.length} shared demo students`);
+
 
         // C. Enrollments (Enroll only first 4 students, leave 1 for "Join Class" demo)
         const enrolledStudents = students.slice(0, 4);
@@ -281,6 +271,122 @@ export async function POST(req: Request) {
 
         const { error: subError } = await supabaseAdmin.from('submissions').insert(submissions);
         if (subError) throw subError;
+
+        // F. Create Practicum
+        const practicumId = uuidv4();
+
+        // Generate proper timeline with weeks and events
+        const practicumTimeline = generateTimeline(
+            DEMO_PRACTICUM.start_date,
+            DEMO_PRACTICUM.end_date,
+            DEMO_PRACTICUM.log_interval as 'daily' | 'weekly' | 'biweekly',
+            DEMO_PRACTICUM.title
+        );
+
+        // Make codes unique to avoid conflicts with other demo accounts
+        const uniqueSuffix = Date.now().toString().slice(-6);
+        const uniqueCohortCode = `${DEMO_PRACTICUM.cohort_code}-${uniqueSuffix}`;
+        const uniqueInviteCode = `TEACH${uniqueSuffix}`;
+
+        const { error: practicumError } = await supabaseAdmin.from('practicums').insert({
+            id: practicumId,
+            instructor_id: userId,
+            title: DEMO_PRACTICUM.title,
+            cohort_code: uniqueCohortCode,
+            invite_code: uniqueInviteCode,
+            start_date: DEMO_PRACTICUM.start_date,
+            end_date: DEMO_PRACTICUM.end_date,
+            log_interval: DEMO_PRACTICUM.log_interval,
+            auto_approve: DEMO_PRACTICUM.auto_approve,
+            geolocation_required: DEMO_PRACTICUM.geolocation_required,
+            final_report_required: DEMO_PRACTICUM.final_report_required,
+            log_template: DEMO_PRACTICUM.log_template,
+            logs_rubric: DEMO_PRACTICUM.logs_rubric,
+            supervisor_report_template: DEMO_PRACTICUM.supervisor_report_template,
+            student_report_template: DEMO_PRACTICUM.student_report_template,
+            grading_config: DEMO_PRACTICUM.grading_config,
+            timeline: practicumTimeline
+        });
+
+        if (!practicumError) {
+            // Enroll first 4 students in practicum (reuse from class)
+            const practicumEnrollments = students.slice(0, 4).map((student, index) => ({
+                id: uuidv4(),
+                practicum_id: practicumId,
+                student_id: student.id,
+                student_registration_number: student.registration_number,
+                status: 'approved',
+                academic_data: {
+                    institution: 'Mombasa Technical Training Institute',
+                    course: 'Diploma in Technical Teacher Education',
+                    year_of_study: 'Year 3'
+                },
+                workplace_data: {
+                    company_name: ['Greenfield High School', 'Riverside High School', 'Hillside Secondary', 'Lakeside Academy'][index],
+                    address: [
+                        'P.O. Box 1234, Kilifi Road, Mombasa',
+                        'P.O. Box 5678, Nyali, Mombasa',
+                        'P.O. Box 9101, Likoni, Mombasa',
+                        'P.O. Box 1121, Bamburi, Mombasa'
+                    ][index],
+                    department: 'Mathematics Department'
+                },
+                supervisor_data: {
+                    name: ['Ms. Johnson', 'Mr. Williams', 'Dr. Brown', 'Mrs. Davis'][index],
+                    email: `supervisor${index + 1}@school${index + 1}.edu`,
+                    phone: `+254700${100000 + index}`,
+                    designation: 'Head of Mathematics'
+                },
+                student_email: student.email,
+                student_phone: `+254${722000000 + index}`,
+                schedule: {
+                    monday: { start: '08:00', end: '14:00' },
+                    tuesday: { start: '08:00', end: '14:00' },
+                    wednesday: { start: '08:00', end: '14:00' },
+                    thursday: { start: '08:00', end: '14:00' },
+                    friday: { start: '08:00', end: '14:00' }
+                },
+                logs_grade: index < 2 ? (85 + Math.floor(Math.random() * 10)) : null,
+                supervisor_grade: index < 2 ? (88 + Math.floor(Math.random() * 8)) : null,
+                supervisor_report: index < 2 ? DEMO_SUPERVISOR_REPORTS[index] : null,
+                joined_at: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+            }));
+
+            const { error: enrollmentError } = await supabaseAdmin.from('practicum_enrollments').insert(practicumEnrollments);
+
+            if (enrollmentError) {
+                console.error("❌ Failed to insert practicum enrollments:", enrollmentError);
+                throw enrollmentError;
+            }
+
+            // Create logs for first 3 students (4 logs each = 12 total)
+            const logEntries: any[] = [];
+            for (let studentIndex = 0; studentIndex < 3; studentIndex++) {
+                DEMO_LOG_ENTRIES.forEach((logTemplate) => {
+                    logEntries.push({
+                        id: uuidv4(),
+                        practicum_id: practicumId,
+                        student_id: students[studentIndex].id,
+                        log_date: logTemplate.week,
+                        submission_status: logTemplate.status === 'read' ? 'submitted' : 'draft',
+                        instructor_status: logTemplate.status, // 'read' or 'unread'
+                        entries: logTemplate.entries,
+                        created_at: new Date(logTemplate.week).toISOString()
+                    });
+                });
+            }
+
+            const { error: logsError } = await supabaseAdmin.from('practicum_logs').insert(logEntries);
+
+            if (logsError) {
+                console.error("❌ Failed to insert practicum logs:", logsError);
+                throw logsError;
+            }
+
+            console.log(`✅ Created practicum with ${practicumEnrollments.length} students and ${logEntries.length} log entries`);
+        } else {
+            console.error("Practicum creation error (non-fatal):", practicumError);
+        }
 
         return NextResponse.json({
             email,

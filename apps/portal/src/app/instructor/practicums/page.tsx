@@ -9,7 +9,7 @@ import { Database } from "@schologic/database";
 import { useSearchParams } from 'next/navigation';
 
 type PracticumItem = Database['public']['Tables']['practicums']['Row'] & {
-    practicum_enrollments?: { count: number }[];
+    practicum_enrollments?: { id: string }[];
 };
 
 function PracticumsContent() {
@@ -28,7 +28,7 @@ function PracticumsContent() {
 
             const { data, error } = await supabase
                 .from('practicums')
-                .select('*, practicum_enrollments(count)')
+                .select('*, practicum_enrollments(id)')
                 .eq('instructor_id', user.id)
                 .order('created_at', { ascending: false });
 
@@ -79,7 +79,7 @@ function PracticumsContent() {
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-slide-in">
                         {practicums.map(prac => {
-                            const studentCount = prac.practicum_enrollments?.[0]?.count || 0;
+                            const studentCount = Array.isArray(prac.practicum_enrollments) ? prac.practicum_enrollments.length : 0;
                             const isActive = new Date(prac.end_date) >= new Date();
 
                             return (

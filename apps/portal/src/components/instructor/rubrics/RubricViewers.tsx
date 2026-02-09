@@ -59,7 +59,7 @@ export function LogsRubricViewer({ rubric, onEdit }: { rubric: RubricConfig, onE
             {viewMode === 'list' ? (
                 // List View
                 <div className="grid gap-6">
-                    {rubric.sections.map((section: RubricSection) => (
+                    {(rubric.sections || []).map((section: RubricSection) => (
                         <div key={section.id} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                             <div className="bg-slate-50 p-3 border-b border-slate-200">
                                 <h4 className="font-bold text-slate-800 text-sm uppercase tracking-wider">{section.title}</h4>
@@ -99,7 +99,7 @@ export function LogsRubricViewer({ rubric, onEdit }: { rubric: RubricConfig, onE
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                            {rubric.sections.map((section) => (
+                            {(rubric.sections || []).map((section) => (
                                 section.criteria.map((criterion, idx) => (
                                     <tr key={criterion.id} className="hover:bg-slate-50/50">
                                         {/* Show Section Title only for first item */}
@@ -184,7 +184,7 @@ export function SupervisorRubricViewer({ rubric, onEdit }: { rubric: PracticumOb
             <div className="bg-white p-4 rounded-xl border border-slate-200 text-sm">
                 <p className="font-bold text-slate-700 mb-2 text-xs uppercase tracking-wider">Grading Key</p>
                 <div className="flex flex-wrap gap-2">
-                    {Object.entries(rubric.grading_key).map(([key, label]) => (
+                    {Object.entries(rubric.grading_key || {}).map(([key, label]) => (
                         <span key={key} className="px-3 py-1 bg-slate-100 text-slate-600 rounded-lg text-xs font-medium border border-slate-200">
                             <strong className="text-slate-900">{key}</strong> = {label}
                         </span>
@@ -195,7 +195,7 @@ export function SupervisorRubricViewer({ rubric, onEdit }: { rubric: PracticumOb
             {viewMode === 'list' ? (
                 // List View
                 <div className="grid gap-6">
-                    {rubric.assessment_areas.map((area, idx) => (
+                    {(rubric.assessment_areas || []).map((area, idx) => (
                         <div key={idx} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                             <div className="bg-slate-50 p-3 border-b border-slate-200">
                                 <h4 className="font-bold text-slate-800 text-sm uppercase tracking-wider">{area.category}</h4>
@@ -228,7 +228,7 @@ export function SupervisorRubricViewer({ rubric, onEdit }: { rubric: PracticumOb
                                 <th className="p-4 w-1/4">Attribute / Competency</th>
                                 <th className="p-4">Description</th>
                                 {/* Dynamically generate Grade Columns */}
-                                {Object.keys(rubric.grading_key).sort((a, b) => Number(b) - Number(a)).map(key => (
+                                {Object.keys(rubric.grading_key || {}).sort((a, b) => Number(b) - Number(a)).map(key => (
                                     <th key={key} className="p-4 text-center w-12 bg-slate-100/50 border-l border-slate-200">
                                         {key}
                                     </th>
@@ -236,7 +236,7 @@ export function SupervisorRubricViewer({ rubric, onEdit }: { rubric: PracticumOb
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                            {rubric.assessment_areas.map((area) => (
+                            {(rubric.assessment_areas || []).map((area) => (
                                 area.attributes.map((attr, idx) => (
                                     <tr key={`${area.category}-${idx}`} className="hover:bg-slate-50/50">
                                         {idx === 0 && (
@@ -253,7 +253,7 @@ export function SupervisorRubricViewer({ rubric, onEdit }: { rubric: PracticumOb
                                             {attr.description}
                                         </td>
                                         {/* Grade Radio Buttons */}
-                                        {Object.keys(rubric.grading_key).sort((a, b) => Number(b) - Number(a)).map(key => (
+                                        {Object.keys(rubric.grading_key || {}).sort((a, b) => Number(b) - Number(a)).map(key => (
                                             <td key={key} className="p-4 text-center align-top border-l border-slate-100 bg-slate-50/20">
                                                 <div className="flex justify-center">
                                                     <input
@@ -324,7 +324,7 @@ export function ReportRubricViewer({ rubric, onEdit }: { rubric: PracticumReport
             {viewMode === 'list' ? (
                 // List View
                 <div className="space-y-4">
-                    {rubric.sections.map((section: ReportSection, idx) => (
+                    {(rubric.sections || []).map((section: ReportSection, idx) => (
                         <div key={idx} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                             <div className="p-4 flex justify-between items-start gap-4">
                                 <div>
@@ -371,7 +371,7 @@ export function ReportRubricViewer({ rubric, onEdit }: { rubric: PracticumReport
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                            {rubric.sections.map((section, idx) => (
+                            {(rubric.sections || []).map((section, idx) => (
                                 <Fragment key={idx}>
                                     {/* Main Section Row */}
                                     <tr className={`hover:bg-slate-50/50 ${section.subsections ? 'bg-slate-50/30 font-bold text-slate-800' : ''}`}>
