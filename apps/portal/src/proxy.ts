@@ -43,8 +43,13 @@ export async function proxy(request: NextRequest) {
             return NextResponse.redirect(new URL('/login?role=instructor', request.url))
         }
 
+        // Strict Role Check: Redirect Students to Student Dashboard
+        if (user.user_metadata?.role === 'student') {
+            return NextResponse.redirect(new URL('/student/dashboard', request.url));
+        }
+
         // Block Demo Users from /instructor/lab and /instructor/settings
-        const isDemoUser = user.email?.endsWith('@schologic.demo');
+        const isDemoUser = user.email?.endsWith('@schologic.demo') || user.user_metadata?.is_demo;
         const isRestrictedRoute = path.startsWith('/instructor/lab') || path.startsWith('/instructor/settings');
 
         if (isRestrictedRoute && isDemoUser) {
@@ -55,7 +60,12 @@ export async function proxy(request: NextRequest) {
     // Student Routes
     if (path.startsWith('/student') && !path.startsWith('/student/login')) {
         if (!user) {
-            return NextResponse.redirect(new URL('/student/login', request.url))
+            return NextResponse.redirect(new URL('/login?role=student', request.url))
+        }
+
+        // Strict Role Check: Redirect Instructors to Instructor Dashboard
+        if (user.user_metadata?.role === 'instructor') {
+            return NextResponse.redirect(new URL('/instructor/dashboard', request.url));
         }
     }
 
