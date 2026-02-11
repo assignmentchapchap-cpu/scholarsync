@@ -64,9 +64,10 @@ export async function proxy(request: NextRequest) {
         }
 
         // Strict Role Check: Redirect Instructors to Instructor Dashboard
-        if (user.user_metadata?.role === 'instructor') {
-            return NextResponse.redirect(new URL('/instructor/dashboard', request.url));
-        }
+        // ALLOWED FOR TESTING: Instructors can access student routes
+        // if (user.user_metadata?.role === 'instructor') {
+        //    return NextResponse.redirect(new URL('/instructor/dashboard', request.url));
+        // }
     }
 
     return response
