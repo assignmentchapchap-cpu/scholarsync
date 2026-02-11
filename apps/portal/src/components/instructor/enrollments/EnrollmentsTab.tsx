@@ -30,34 +30,18 @@ export default function EnrollmentsTab({ practicumId, initialEnrollments = [] }:
 
     const selectedStudent = enrollments.find(e => e.id === selectedStudentId) || null;
 
-    // Fetch data if not provided or to refresh
     const fetchEnrollments = async () => {
         try {
             // setLoading(true); // Don't block UI on refresh
-            const { data: enrollDataRaw, error: enrollError } = await supabase
+            const { data: enrollData, error: enrollError } = await supabase
                 .from('practicum_enrollments')
-                .select('*')
+                .select('*, profiles:student_id(*)')
                 .eq('practicum_id', practicumId)
                 .neq('status', 'draft');
 
             if (enrollError) throw enrollError;
 
-            if (enrollDataRaw) {
-                const studentIds = enrollDataRaw.map(e => e.student_id);
-                const { data: profilesData } = await supabase
-                    .from('profiles')
-                    .select('*')
-                    .in('id', studentIds);
-
-                const profilesMap = new Map(profilesData?.map(p => [p.id, p]));
-
-                const joined = enrollDataRaw.map(e => ({
-                    ...e,
-                    profiles: profilesMap.get(e.student_id) || null
-                })) as unknown as Enrollment[];
-
-                setEnrollments(joined);
-            }
+            setEnrollments((enrollData || []) as unknown as Enrollment[]);
         } catch (error) {
             console.error("Error fetching enrollments:", error);
             showToast("Failed to refresh student list", "error");

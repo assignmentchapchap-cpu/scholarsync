@@ -88,16 +88,28 @@ export async function sendDemoRecoveryOTP(email: string) {
   }
 
   try {
-    // 1. Verify User Exists
-    const { data: { users }, error: userError } = await supabaseAdmin.auth.admin.listUsers();
-    if (userError) throw userError;
+    // 1. Look up user ID via profiles table (indexed, no full scan)
+    const { data: profile, error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .select('id')
+      .eq('email', email.toLowerCase())
+      .maybeSingle();
 
-    const user = users.find(u => u.email?.toLowerCase() === email.toLowerCase());
+    if (profileError) throw profileError;
+    if (!profile) {
+      return { error: 'User not found' };
+    }
+
+    // 2. Fetch user metadata to verify demo status (single user lookup)
+    const { data: { user }, error: userError } = await supabaseAdmin
+      .auth.admin.getUserById(profile.id);
+
+    if (userError) throw userError;
     if (!user) {
       return { error: 'User not found' };
     }
 
-    // 2. Verify Demo Status
+    // 3. Verify Demo Status
     if (user.user_metadata?.is_demo !== true) {
       return { error: 'This email belongs to a standard account. Please log in normally.' };
     }

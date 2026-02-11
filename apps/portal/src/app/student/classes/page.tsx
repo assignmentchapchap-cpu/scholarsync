@@ -35,13 +35,14 @@ export default function StudentClassesPage() {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
 
-            // Fetch Enrollments with Class and Instructor Profile
+            // Fetch enrollments with class + instructor profile in a single query
             const { data, error } = await supabase
                 .from('enrollments')
                 .select(`
                     class_id,
                     classes (
-                        id, name, class_code, start_date, end_date, is_locked, instructor_id
+                        id, name, class_code, start_date, end_date, is_locked, instructor_id,
+                        profiles:instructor_id (full_name)
                     )
                 `)
                 .eq('student_id', user.id)
@@ -49,30 +50,9 @@ export default function StudentClassesPage() {
 
             if (error) throw error;
 
-            // Manual fetch for profiles if relation not set up in schema
-            // Or assume typical join. Let's try to fetch profiles separately to be safe or map properly.
-            // Ideally: classes(..., profiles(full_name)) but 'classes' usually links 'instructor_id' -> 'profiles.id'
-
             const validData = (data ?? []).filter((d): d is typeof data[number] & { classes: NonNullable<typeof d.classes> } => d.classes !== null);
 
-            // Enrich with instructor names
-            const enriched = await Promise.all(validData.map(async (item) => {
-                let instructorName = 'Unknown Instructor';
-                if (item.classes?.instructor_id) {
-                    const { data: prof } = await supabase
-                        .from('profiles')
-                        .select('full_name')
-                        .eq('id', item.classes.instructor_id)
-                        .single();
-                    if (prof) instructorName = prof.full_name || 'Instructor';
-                }
-                return {
-                    ...item,
-                    classes: { ...item.classes, profiles: { full_name: instructorName } }
-                };
-            }));
-
-            setClasses(enriched as EnrolledClass[]);
+            setClasses(validData as unknown as EnrolledClass[]);
 
         } catch (error) {
             console.error('Error fetching classes:', error);

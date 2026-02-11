@@ -135,43 +135,20 @@ function PracticumDetailsContent({ id }: { id: string }) {
                 const { data: { user } } = await supabase.auth.getUser();
                 if (!user) return;
 
-                // Fetch Practicum
-                const { data: pracData, error: pracError } = await supabase
-                    .from('practicums')
-                    .select('*')
-                    .eq('id', id)
-                    .single();
+                // Fetch Practicum + Enrollments in parallel (single query each)
+                const [pracRes, enrollRes] = await Promise.all([
+                    supabase.from('practicums').select('*').eq('id', id).single(),
+                    supabase.from('practicum_enrollments')
+                        .select('*, profiles:student_id(*)')
+                        .eq('practicum_id', id)
+                        .neq('status', 'draft')
+                ]);
 
-                if (pracError) throw pracError;
-                setPracticum(pracData);
+                if (pracRes.error) throw pracRes.error;
+                setPracticum(pracRes.data);
 
-                // Fetch Enrollments (Basic)
-                const { data: enrollDataRaw, error: enrollError } = await supabase
-                    .from('practicum_enrollments')
-                    .select('*')
-                    .eq('practicum_id', id)
-                    .neq('status', 'draft'); // Exclude incomplete applications
-
-                if (enrollError) throw enrollError;
-
-                // Manually fetch profiles since recursive relation might be missing in types
-                let joinedEnrollments: Enrollment[] = [];
-                if (enrollDataRaw) {
-                    const studentIds = enrollDataRaw.map(e => e.student_id);
-                    const { data: profilesData } = await supabase
-                        .from('profiles')
-                        .select('*')
-                        .in('id', studentIds);
-
-                    const profilesMap = new Map(profilesData?.map(p => [p.id, p]));
-
-                    joinedEnrollments = enrollDataRaw.map(e => ({
-                        ...e,
-                        profiles: profilesMap.get(e.student_id) || null
-                    })) as unknown as Enrollment[];
-                }
-
-                setEnrollments(joinedEnrollments);
+                if (enrollRes.error) throw enrollRes.error;
+                setEnrollments((enrollRes.data || []) as unknown as Enrollment[]);
 
             } catch (error: any) {
                 console.error("Error fetching practicum data details:", {
