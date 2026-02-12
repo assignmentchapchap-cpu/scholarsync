@@ -1,6 +1,7 @@
 import { UseCasesHero } from "@/components/use-cases/UseCasesHero";
 import { SectionGrid, GridColumn } from "@/components/use-cases/SectionGrid";
 import { TvetPilotCTA } from "@/components/use-cases/tvet/TvetPilotCTA";
+import { PracticumProcessVisual } from "@/components/use-cases/universities/PracticumProcessVisual";
 import { Maximize2, Layers, Users, TrendingUp, Shield, ArrowRight, CheckCircle, BookOpen } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -190,52 +191,8 @@ export default function TvetPage() {
                         </div>
                     </GridColumn>
                     <GridColumn span={6} className="order-1 md:order-2 flex items-center justify-center relative">
-                        {/* Laptop Mockup Container */}
-                        <div className="relative w-full max-w-lg perspective-1000">
-
-                            {/* Floating Feature Bubbles - Emerald Theme */}
-                            <div className="absolute -left-12 top-0 z-20 animate-float-slow hidden md:flex items-center gap-3 bg-white border-l-4 border-l-emerald-500 p-3 rounded-lg shadow-xl max-w-[200px]">
-                                <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center shrink-0">
-                                    <Shield className="w-4 h-4 text-emerald-600" />
-                                </div>
-                                <div>
-                                    <div className="text-xs font-bold text-slate-900">Audit-Ready</div>
-                                    <div className="text-[10px] text-slate-500 leading-tight">Always compliance ready</div>
-                                </div>
-                            </div>
-
-                            <div className="absolute -right-8 bottom-20 z-20 animate-float-delayed hidden md:flex items-center gap-3 bg-white border-l-4 border-l-blue-500 p-3 rounded-lg shadow-xl max-w-[220px]">
-                                <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
-                                    <TrendingUp className="w-4 h-4 text-blue-600" />
-                                </div>
-                                <div>
-                                    <div className="text-xs font-bold text-slate-900">Real-Track</div>
-                                    <div className="text-[10px] text-slate-500 leading-tight">Live progress monitoring</div>
-                                </div>
-                            </div>
-
-                            <div className="absolute right-0 -top-12 z-20 animate-float hidden md:flex items-center gap-3 bg-white border-l-4 border-l-amber-500 p-3 rounded-lg shadow-xl max-w-[200px]">
-                                <div className="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center shrink-0">
-                                    <CheckCircle className="w-4 h-4 text-amber-600" />
-                                </div>
-                                <div>
-                                    <div className="text-xs font-bold text-slate-900">Unified Grades</div>
-                                    <div className="text-[10px] text-slate-500 leading-tight">Centralized academic record</div>
-                                </div>
-                            </div>
-
-                            {/* Laptop Base */}
-                            <div className="relative mx-auto border-gray-800 bg-gray-800 border-[8px] rounded-t-xl h-[250px] md:h-[300px] w-full max-w-[500px] shadow-2xl">
-                                <div className="rounded-lg overflow-hidden h-full w-full bg-slate-900 relative">
-                                    <Image
-                                        src="/images/colleges/instructor-dashboard.png"
-                                        alt="TVET Institutional Dashboard - Real-time analytics and grade tracking"
-                                        fill
-                                        className="object-cover object-top"
-                                    />
-                                </div>
-                            </div>
-                            <div className="relative mx-auto bg-gray-900 rounded-b-xl rounded-t-sm h-[20px] max-w-[550px] md:w-[110%] -ml-[5%] shadow-xl"></div>
+                        <div className="relative w-full max-w-lg">
+                            <PracticumProcessVisual />
                         </div>
                     </GridColumn>
                 </SectionGrid>
