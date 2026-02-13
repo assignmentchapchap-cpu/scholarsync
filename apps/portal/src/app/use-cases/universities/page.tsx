@@ -8,6 +8,7 @@ import { UniversitiesPilotCTA } from "@/components/use-cases/universities/Univer
 import { UniversitiesHeroVisual } from "@/components/use-cases/universities/UniversitiesHeroVisual";
 import { PracticumProcessVisual } from "@/components/use-cases/universities/PracticumProcessVisual";
 import { TAInsightsVisual } from "@/components/use-cases/TAInsightsVisual";
+import { ZTCIngestionVisual } from "@/components/use-cases/ZTCIngestionVisual";
 
 export const metadata: Metadata = {
     title: 'University LMS Kenya | Academic Integrity & Multi-Campus Management | Schologic',
@@ -168,14 +169,9 @@ export default function UniversitiesPage() {
                             </div>
                         </div>
                     </GridColumn>
-                    <GridColumn span={6}>
-                        <div className="bg-slate-50 p-8 rounded-3xl border border-slate-200 h-full relative overflow-hidden group">
-                            {/* Visual Placeholder: Universal Reader UI */}
-                            <div className="absolute inset-0 bg-slate-50 flex items-center justify-center">
-                                <div className="text-slate-400 font-medium font-mono text-sm px-4 text-center">
-                                    Visual Placeholder: <br /> Universal Reader UI
-                                </div>
-                            </div>
+                    <GridColumn span={6} className="flex items-center justify-center">
+                        <div className="w-full transform hover:scale-[1.02] transition-transform duration-500">
+                            <ZTCIngestionVisual />
                         </div>
                     </GridColumn>
                 </SectionGrid>
