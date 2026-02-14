@@ -7,8 +7,10 @@ import { Metadata } from "next";
 import { UniversitiesPilotCTA } from "@/components/use-cases/universities/UniversitiesPilotCTA";
 import { UniversitiesHeroVisual } from "@/components/use-cases/universities/UniversitiesHeroVisual";
 import { PracticumProcessVisual } from "@/components/use-cases/universities/PracticumProcessVisual";
+import { SystemEcosystemVisual } from "@/components/use-cases/universities/SystemEcosystemVisual";
 import { TAInsightsVisual } from "@/components/use-cases/TAInsightsVisual";
 import { ZTCIngestionVisual } from "@/components/use-cases/ZTCIngestionVisual";
+import { DeanDashboardVisual } from "@/components/use-cases/universities/DeanDashboardVisual";
 
 export const metadata: Metadata = {
     title: 'University LMS Kenya | Academic Integrity & Multi-Campus Management | Schologic',
@@ -47,7 +49,7 @@ export default function UniversitiesPage() {
                             </p>
                             <div className="relative aspect-video w-full rounded-2xl overflow-hidden shadow-lg border border-indigo-100 mt-6">
                                 <Image
-                                    src="/images/universities/university-ai-content-detection.svg"
+                                    src="/images/universities/university-ai-content-detection.webp"
                                     alt="Schologic Integrity Hub - AI Content Detection Dashboard with granularity controls"
                                     fill
                                     className="object-cover"
@@ -180,14 +182,9 @@ export default function UniversitiesPage() {
             {/* 6. Multi-Campus Management - Light Amber Theme */}
             <div className="bg-amber-50 py-24">
                 <SectionGrid>
-                    <GridColumn span={6} className="order-2 md:order-1">
-                        <div className="bg-white p-8 rounded-2xl border border-amber-100 shadow-sm h-full relative overflow-hidden group">
-                            {/* Visual Placeholder: Campus Map Network */}
-                            <div className="absolute inset-0 bg-slate-50 flex items-center justify-center">
-                                <div className="text-slate-400 font-medium font-mono text-sm px-4 text-center">
-                                    Visual Placeholder: <br /> Campus Map Network
-                                </div>
-                            </div>
+                    <GridColumn span={6} className="order-2 md:order-1 flex items-center justify-center">
+                        <div className="w-full transform hover:scale-[1.02] transition-transform duration-500">
+                            <SystemEcosystemVisual />
                         </div>
                     </GridColumn>
                     <GridColumn span={6} className="order-1 md:order-2 flex items-center">
@@ -239,12 +236,10 @@ export default function UniversitiesPage() {
                         </div>
                     </GridColumn>
                     <GridColumn span={6}>
-                        <div className="bg-slate-50 p-8 rounded-3xl border border-slate-200 h-full relative overflow-hidden group">
-                            {/* Visual Placeholder: Dean Analytics Dashboard */}
-                            <div className="absolute inset-0 bg-slate-50 flex items-center justify-center">
-                                <div className="text-slate-400 font-medium font-mono text-sm px-4 text-center">
-                                    Visual Placeholder: <br /> Dean Analytics Dashboard
-                                </div>
+                        <div className="bg-slate-50 p-8 rounded-3xl border border-slate-200 h-full relative group flex items-center justify-center">
+                            {/* Visual: Dean Analytics Dashboard Drill-down */}
+                            <div className="w-full transform scale-95 group-hover:scale-100 transition-transform duration-700 ease-out">
+                                <DeanDashboardVisual />
                             </div>
                         </div>
                     </GridColumn>
