@@ -107,9 +107,9 @@ export const DeanDashboardVisual = () => {
                 </button>
 
                 {/* Desktop Monitor Frame */}
-                <div className="relative w-full max-w-[520px] mx-10 transition-shadow duration-500 group-hover/carousel:drop-shadow-2xl">
+                <div className="relative w-full mx-4 transition-shadow duration-500 group-hover/carousel:drop-shadow-2xl">
                     {/* Monitor Bezel */}
-                    <div className="relative bg-gradient-to-b from-slate-700 to-slate-800 rounded-xl p-3 shadow-2xl border border-slate-600">
+                    <div className="relative bg-gradient-to-b from-slate-700 to-slate-800 rounded-xl p-1.5 shadow-2xl border border-slate-600">
                         {/* Webcam Dot */}
                         <div className="absolute top-1.5 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-500 rounded-full z-10 ring-1 ring-slate-400/30"></div>
 
