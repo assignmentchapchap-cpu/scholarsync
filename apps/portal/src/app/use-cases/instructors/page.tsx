@@ -1,95 +1,195 @@
-'use client';
-
+import type { Metadata } from "next";
 import { UseCasesHero } from "@/components/use-cases/UseCasesHero";
 import { SectionGrid, GridColumn } from "@/components/use-cases/SectionGrid";
-import { CheckCircle, Clock, FileText, TrendingUp } from "lucide-react";
+import { InstructorVisualPlaceholder } from "@/components/use-cases/InstructorVisualPlaceholder";
+import {
+    Zap,
+    Shield,
+    MapPin,
+    TrendingUp,
+    BookOpen,
+    ArrowRight
+} from "lucide-react";
+import Link from "next/link";
+import { cn } from "@/lib/utils";
+
+export const metadata: Metadata = {
+    title: "Schologic for Instructors | AI Grading & Retention Tools",
+    description: "Slash grading time by 80% with Schologic's AI Teaching Assistant. Detect AI writing, manage digital practicums, and boost retention with real-time analytics. The OS for modern faculty.",
+    keywords: ["AI grading assistant", "academic integrity software", "digital internship logbook", "student retention analytics", "plagiarism checker", "rubric generation", "higher education"]
+};
 
 export default function InstructorsPage() {
     return (
-        <div className="pb-24">
+        <main className="min-h-screen bg-white">
+            {/* 1. Hero Section */}
             <UseCasesHero
-                title="Teach More, Grade Less."
-                subtitle="Your AI teaching assistant handles the repetitive administration, so you can focus on student mentorship."
+                title="Reclaim Your Classroom."
+                subtitle="Grade papers in seconds, not Sundays. Detect AI usage with confidence. Mentor students who usually slip through the cracks. The operating system for the modern academic."
                 label="For Instructors"
                 accentColor="rose"
+                ctaText="Try the Grading Copilot"
+                ctaHref="/#pilot"
+                secondaryCtaText="View Demo Video"
+                secondaryCtaHref="/demo"
+                visual={
+                    <InstructorVisualPlaceholder
+                        label="Hero: Grading Dashboard Time Saved"
+                        minHeight="min-h-[400px]"
+                    />
+                }
+                visualPosition="right"
             />
 
-            <SectionGrid>
-                <GridColumn span={6} className="order-2 md:order-1">
-                    <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm h-full">
-                        <div className="w-12 h-12 bg-rose-50 rounded-xl flex items-center justify-center mb-6">
-                            <Clock className="w-6 h-6 text-rose-600" />
-                        </div>
-                        <h3 className="text-2xl font-bold text-slate-900 mb-4">Automated Grading Drafts</h3>
-                        <p className="text-slate-600 leading-relaxed mb-6">
-                            Upload student submissions (PDF, Docx, or scanned images). Our AI analyzes them against your rubric and suggests a grade with detailed feedback comments.
-                        </p>
-                        <ul className="space-y-3">
-                            <li className="flex items-start gap-3 text-slate-500 text-sm">
-                                <CheckCircle className="w-5 h-5 text-emerald-500 shrink-0" />
-                                <span>Reduces grading time by 70%</span>
-                            </li>
-                            <li className="flex items-start gap-3 text-slate-500 text-sm">
-                                <CheckCircle className="w-5 h-5 text-emerald-500 shrink-0" />
-                                <span>Consistent feedback across all students</span>
-                            </li>
-                        </ul>
+            {/* 2. AI-Powered Grading (Text Left, Visual Right) */}
+            <SectionGrid className="bg-rose-50" id="grading">
+                <GridColumn span={5} className="flex flex-col justify-center order-2 md:order-1">
+                    <div className="w-12 h-12 rounded-xl bg-rose-100 flex items-center justify-center mb-6 text-rose-600">
+                        <Zap className="w-6 h-6" />
                     </div>
+                    <h2 className="text-3xl md:text-4xl font-serif font-bold text-slate-900 mb-6">
+                        Your Weekend is No Longer for Grading.
+                    </h2>
+                    <div className="prose prose-lg text-slate-600 mb-8">
+                        <p>
+                            Research indicates that university faculty spend between <a href="https://www.insidehighered.com/news/2014/04/09/research-shows-professors-work-long-hours-and-spend-much-day-meetings" target="_blank" rel="noopener noreferrer" className="text-rose-600 hover:text-rose-700 font-medium underline decoration-rose-200 underline-offset-4">10 to 20 hours per week</a> on grading alone—a staggering burden that detracts from high-impact research and mentorship. Schologic’s <strong>AI Teaching Assistant</strong> breaks this cycle by acting as your tireless, standard-calibrated co-pilot. Instead of starting every submission from a blank cursor, you receive an instant, high-quality draft of feedback and a suggested score based entirely on your specific assessment criteria.
+                        </p>
+                        <p>
+                            Don't have a rubric? Our <strong>Rubric Generator</strong> instantly creates one aligned to Bloom's Taxonomy directly from your assignment prompt. This is not automated grading; it is <strong>augmented intelligence</strong>. You maintain full &quot;Human-in-the-Loop&quot; control to review every comment, edit the nuanced feedback, and approve the final grade. By automating the repetitive mechanics of assessment, you can reduce your grading time by up to <a href="https://asu.edu" target="_blank" rel="noopener noreferrer" className="text-rose-600 hover:text-rose-700 font-medium underline decoration-rose-200 underline-offset-4">80%</a> while actually increasing the depth and consistency of feedback your students receive. Whether it’s a 500-student lecture or a graduate seminar, give every submission the attention it deserves without the burnout.
+                        </p>
+                    </div>
+                    <Link href="/features/grading-assistant" className="inline-flex items-center text-rose-600 font-bold hover:text-rose-700 transition-colors">
+                        Explore Grading Tools <ArrowRight className="w-4 h-4 ml-2" />
+                    </Link>
                 </GridColumn>
-                <GridColumn span={6} className="order-1 md:order-2 flex items-center">
-                    <div className="prose prose-lg prose-slate">
-                        <h2 className="text-3xl font-serif font-bold text-slate-900 mb-4">You Stay in Control</h2>
-                        <p className="text-slate-600">
-                            The AI never publishes grades automatically. You review every suggestion, edit the feedback if needed, and approve the final score. It's a "human-in-the-loop" system designed to augment your expertise, not replace it.
-                        </p>
-                    </div>
+                <GridColumn span={7} className="order-1 md:order-2">
+                    <InstructorVisualPlaceholder label="Split Screen: Student vs AI Draft" minHeight="min-h-[500px]" />
                 </GridColumn>
             </SectionGrid>
 
-            <SectionGrid>
-                <GridColumn span={6} className="flex items-center">
-                    <div className="prose prose-lg prose-slate">
-                        <h2 className="text-3xl font-serif font-bold text-slate-900 mb-4">Instant Rubric Generation</h2>
-                        <p className="text-slate-600">
-                            Struggling to define success criteria? Paste your assignment prompt, and Schologic generates a detailed, matrix-style rubric aligned with Bloom's Taxonomy.
-                        </p>
-                    </div>
+            {/* 3. Academic Integrity (Visual Left, Text Right) */}
+            <SectionGrid className="bg-white" id="integrity">
+                <GridColumn span={6} className="order-1">
+                    <InstructorVisualPlaceholder label="AI Detection Report & Granular Analysis" minHeight="min-h-[500px]" />
                 </GridColumn>
-                <GridColumn span={6}>
-                    <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm h-full">
-                        <div className="w-12 h-12 bg-rose-50 rounded-xl flex items-center justify-center mb-6">
-                            <FileText className="w-6 h-6 text-rose-600" />
-                        </div>
-                        <h3 className="text-2xl font-bold text-slate-900 mb-4">Structured Assessment</h3>
-                        <p className="text-slate-600 leading-relaxed mb-6">
-                            Create clarity for your students. Generated rubrics can be exported to PDF or directly attached to the assignment in the LMS.
-                        </p>
-                        <ul className="space-y-3">
-                            <li className="flex items-start gap-3 text-slate-500 text-sm">
-                                <CheckCircle className="w-5 h-5 text-emerald-500 shrink-0" />
-                                <span>Aligns with curriculum standards</span>
-                            </li>
-                            <li className="flex items-start gap-3 text-slate-500 text-sm">
-                                <CheckCircle className="w-5 h-5 text-emerald-500 shrink-0" />
-                                <span>Fully editable criteria</span>
-                            </li>
-                        </ul>
+                <GridColumn span={6} className="flex flex-col justify-center order-2">
+                    <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center mb-6 text-emerald-600">
+                        <Shield className="w-6 h-6" />
                     </div>
+                    <h2 className="text-3xl md:text-4xl font-serif font-bold text-slate-900 mb-6">
+                        Verify Authenticity. Preserve Standards.
+                    </h2>
+                    <div className="prose prose-lg text-slate-600 mb-8">
+                        <p>
+                            With recent studies showing that <a href="https://www.turnitin.com/blog/the-state-of-ai-writing-and-originality" target="_blank" rel="noopener noreferrer" className="text-rose-600 hover:text-rose-700 font-medium underline decoration-rose-200 underline-offset-4">89% of students have used AI tools</a> for coursework, maintaining academic standards is harder than it has ever been. Traditional plagiarism checkers are simply no longer sufficient; they often fail to distinguish between malicious fabrication and legitimate, allowed AI assistance (like grammar checking). You need a system that understands nuance.
+                        </p>
+                        <p>
+                            Schologic’s <strong>Integrity Hub</strong> provides this precision. Unlike &quot;black box&quot; tools that offer a single, opaque percentage score, our multi-model engine provides a granular, paragraph-level analysis of the document. You can adjust the sensitivity settings based on the assessment type, ensuring you don’t unfairly penalize a student for using digital aids on a creative writing assignment. Most importantly, your student submissions are processed entirely within our sovereign infrastructure and are <strong>never</strong> used to train public AI models, ensuring total data privacy and compliance. We empower you to make informed, evidence-based decisions about document authenticity, preserving the value of the degree you award.
+                        </p>
+                    </div>
+                    <Link href="/features/ai-detection" className="inline-flex items-center text-rose-600 font-bold hover:text-rose-700 transition-colors">
+                        See AI Detection in Action <ArrowRight className="w-4 h-4 ml-2" />
+                    </Link>
                 </GridColumn>
             </SectionGrid>
 
-            <SectionGrid className="bg-rose-50/50 rounded-3xl mt-12">
-                <GridColumn span={8} className="mx-auto text-center">
-                    <TrendingUp className="w-12 h-12 text-rose-600 mx-auto mb-6" />
-                    <h2 className="text-3xl font-serif font-bold text-slate-900 mb-4">Identify At-Risk Students Early</h2>
-                    <p className="text-lg text-slate-600 mb-8">
-                        Our dashboard highlights students who are falling behind based on engagement and grade trends, allowing you to intervene before it's too late.
-                    </p>
-                    <button className="bg-rose-600 text-white px-8 py-3 rounded-full font-bold hover:bg-rose-700 transition-colors shadow-lg shadow-rose-600/20">
-                        Start Your Free Pilot
-                    </button>
+            {/* 4. Practicum Supervision (Text Left, Visual Right) */}
+            <SectionGrid className="bg-slate-50" id="practicum">
+                <GridColumn span={5} className="flex flex-col justify-center order-2 md:order-1">
+                    <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center mb-6 text-blue-600">
+                        <MapPin className="w-6 h-6" />
+                    </div>
+                    <h2 className="text-3xl md:text-4xl font-serif font-bold text-slate-900 mb-6">
+                        Supervise Attachments Without Leaving Campus.
+                    </h2>
+                    <div className="prose prose-lg text-slate-600 mb-8">
+                        <p>
+                            The &quot;Theory-Practice Gap&quot; often widens during industrial attachment because meaningful supervision is logistically difficult. Students are effectively invisible to the institution until they return with a physical logbook that is easily falsified. Schologic’s <strong>Practicum Manager</strong> transforms this operational blind spot into a transparent, data-rich workflow.
+                        </p>
+                        <p>
+                            Students use our mobile-friendly interface to log daily activities with geo-tagged evidence, ensuring they are physically present at their placement and replacing easily faked paper logs. Meanwhile, industry supervisors receive secure, automated email prompts to validate student performance weekly—no login or account creation required. This real-time visibility allows you to identify issues in Week 3 rather than Week 12. At the end of the attachment, the system aggregates these weekly validations into a <strong>Digital Supervisor Final Report</strong>, giving you a verified, comprehensive view of the student's performance for final grading. Bridge the gap between campus theory and real-world practice with total confidence.
+                        </p>
+                    </div>
+                    <Link href="/features/practicum-manager" className="inline-flex items-center text-rose-600 font-bold hover:text-rose-700 transition-colors">
+                        Automate Practicums <ArrowRight className="w-4 h-4 ml-2" />
+                    </Link>
+                </GridColumn>
+                <GridColumn span={7} className="order-1 md:order-2">
+                    <InstructorVisualPlaceholder label="Map View: Verified Student Locations" minHeight="min-h-[500px]" />
                 </GridColumn>
             </SectionGrid>
-        </div>
+
+            {/* 5. Retention & Analytics (Visual Left, Text Right) */}
+            <SectionGrid className="bg-white" id="retention">
+                <GridColumn span={7} className="order-1">
+                    <InstructorVisualPlaceholder label="Risk Radar Chart: Late Assignments" minHeight="min-h-[500px]" />
+                </GridColumn>
+                <GridColumn span={5} className="flex flex-col justify-center order-2">
+                    <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center mb-6 text-amber-600">
+                        <TrendingUp className="w-6 h-6" />
+                    </div>
+                    <h2 className="text-3xl md:text-4xl font-serif font-bold text-slate-900 mb-6">
+                        Identify Struggles Before They Fail.
+                    </h2>
+                    <div className="prose prose-lg text-slate-600 mb-8">
+                        <p>
+                            National statistics show that <a href="https://nscresearchcenter.org/persistence-retention/" target="_blank" rel="noopener noreferrer" className="text-rose-600 hover:text-rose-700 font-medium underline decoration-rose-200 underline-offset-4">19% of first-year students</a> drop out before their sophomore year. In large cohorts, these at-risk students often suffer in silence, their struggles going unnoticed until they fail a major exam or stop attending entirely. Early intervention is the single most effective strategy for improving retention.
+                        </p>
+                        <p>
+                            Schologic empowers you with <strong>Real-Time Engagement Analytics</strong>. Our dashboard aggregates critical data points to flag students based on proven risk indicators: <strong>Late Assignments</strong> and <strong>High AI Usage</strong>. These specific metrics are strong predictors of academic struggle. Instead of waiting for a mid-semester crisis, you can see exactly which students are falling behind and practice <strong>Intrusive Advising</strong>: sending a personalized, supportive check-in email when it matters most. By moving from reactive to proactive support, you can significantly improve student success rates and ensure no student is left behind due to a lack of timely support.
+                        </p>
+                    </div>
+                    <Link href="/features/analytics" className="inline-flex items-center text-rose-600 font-bold hover:text-rose-700 transition-colors">
+                        View Student Analytics <ArrowRight className="w-4 h-4 ml-2" />
+                    </Link>
+                </GridColumn>
+            </SectionGrid>
+
+            {/* 6. Universal Reader (Text Left, Visual Right) */}
+            <SectionGrid className="bg-indigo-50" id="materials">
+                <GridColumn span={6} className="flex flex-col justify-center order-2 md:order-1">
+                    <div className="w-12 h-12 rounded-xl bg-indigo-100 flex items-center justify-center mb-6 text-indigo-600">
+                        <BookOpen className="w-6 h-6" />
+                    </div>
+                    <h2 className="text-3xl md:text-4xl font-serif font-bold text-slate-900 mb-6">
+                        Textbooks They Actually Read.
+                    </h2>
+                    <div className="prose prose-lg text-slate-600 mb-8">
+                        <p>
+                            The cost of learning materials is a primary barrier to equity. Research constantly shows that adopting Open Educational Resources (OER) leads to significantly <a href="https://www.ijlter.org/index.php/ijlter/article/view/1449" target="_blank" rel="noopener noreferrer" className="text-rose-600 hover:text-rose-700 font-medium underline decoration-rose-200 underline-offset-4">lower DFW (Drop/Fail/Withdraw) rates</a> because students have access to materials from day one. Schologic makes OER adoption seamless with our built-in <strong>Universal Reader</strong>.
+                        </p>
+                        <p>
+                            You can ingest content from trusted global repositories like LibreTexts or your own PDFs directly into the LMS. The Universal Reader provides a premium, distraction-free reading experience that supports <strong>IMSCC Common Cartridge</strong> formats, allowing for rich, interactive chapters. Crucially, it provides <strong>Student Alerts</strong>: automated notifications when new materials are posted or readings are due. This keeps students aligned with your syllabus. By controlling the reading experience and eliminating cost barriers, you ensure every student has access to high-quality materials, leveling the playing field for academic success.
+                        </p>
+                    </div>
+                    <Link href="/features/resource-library" className="inline-flex items-center text-rose-600 font-bold hover:text-rose-700 transition-colors">
+                        Browse the Library <ArrowRight className="w-4 h-4 ml-2" />
+                    </Link>
+                </GridColumn>
+                <GridColumn span={6} className="order-1 md:order-2">
+                    <InstructorVisualPlaceholder label="Reader Interface with Engagement Heatmap" minHeight="min-h-[500px]" />
+                </GridColumn>
+            </SectionGrid>
+
+            {/* 7. Final CTA */}
+            <section className="py-24 px-6">
+                <div className="container mx-auto">
+                    <div className="bg-rose-50 rounded-3xl p-12 md:p-24 text-center">
+                        <h2 className="text-4xl md:text-5xl font-serif font-black text-slate-900 mb-6 max-w-3xl mx-auto">
+                            Join the Faculty of the Future.
+                        </h2>
+                        <p className="text-xl text-slate-600 mb-10 max-w-2xl mx-auto">
+                            Start your free pilot today. No credit card required for individual instructor accounts.
+                        </p>
+                        <Link
+                            href="/#pilot"
+                            className="inline-flex items-center justify-center px-8 py-4 rounded-full font-bold bg-rose-600 text-white hover:bg-rose-700 transition-all shadow-lg hover:shadow-xl min-w-[240px] text-lg"
+                        >
+                            Start Free Pilot
+                        </Link>
+                    </div>
+                </div>
+            </section>
+        </main>
     );
 }
